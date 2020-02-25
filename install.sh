@@ -1,48 +1,17 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #
 # Dotfiles
 # Mike Abreu
 #
 # Goals:
-
 # 1. From fresh boot to configured terminal environment
 # 2. Support for major operating systems (Latest) excluding Windows
-#     - macOS, CentOS, Debian, Ubuntu, OpenBSD, RedHat
-# 3. Provide feature list to select from
-#     - Allows different configurations from one dotfiles
-
-# Program Logic:
-
-# - Determine if parameters were passed in
-#     -> Process parameters
-#     | Headless => Install Headless Profile
-#     | GUI => Install GUI Profile
-#     | Features => Display a list of features
-#     | _ => Prompt user for options
-# - Determine operating system and version
-#     -> Prompt to continue for unsupported OS and/or version
-#     -> Set OS and version variables for program switch cases
-# - Prompt user for feature selection
-#     -> Would be cool for interaction here
-# - Install profile/features that were selected
-# - (Success Message || Error Message) for User and Exit
+#     - macOS, CentOS, Debian, Ubuntu
+# 3. Allow different configurations from one dotfiles
 
 # Todo:
-
-# - Logging Function
-#     -> Create a logfile of all commands run, packages installed, and files configured.
 # - Uninstall changes
 #     -> Uninstall all features or only some features
-
-# Profiles:
-
-# - Profile: Headless Mode
-#     ->
-# - Profile: GUI Mode
-#     ->
-# - Profile: Minimal
-
-# Features:
 
 # - Feature: Install Shell
 #     |>All Profiles
@@ -88,44 +57,89 @@
 #     -> Create symlink for <<Config File Locations>>
 # - Feature: Install Common PowerTools
 #     |> No Profiles
-#     -> Install git
-#     -> Install htop
 #     -> Install axel
-#     -> Install curl
-#     -> Install wget
 #     -> Install ipsets
 #     -> Install fail2ban
 #     -> Install iptables
 #     -> Install gpg
-#     -> Install jq
 
 # Imports
-source library.sh
+source lib-core.sh
+source lib-config.sh
 
 # Global Variables
+DEPENDENCIES_INSTALLED="False"
+TMUX_ATTACHED="False"
 
 # Main
 main() {
-    # Welcome Prompt
-    display_bar
-    display_message """
-    dotfiles - Mike Abreu
-    This script will configure your terminal environment.
-    """
-
-    # Determine operating system and version
     check_operating_system
+    handle_arguments "$@"
+
+    if [[ $DEPENDENCIES_INSTALLED == "False" ]];then
+        # Welcome Prompt
+        help_message
+
+        # Determine operating system and version
+        display_bar
+        display_info "OPERATING_SYSTEM: ${OPERATING_SYSTEM}"
+        display_info "OPERATING_SYSTEM_VERSION: ${OPERATING_SYSTEM_VERSION}"
+
+        # Install dependencies for dotfiles to operate
+        display_bar
+        display_info "Installing dotfile dependencies"
+        install_system_package "jq"
+        install_system_package "stow"
+        install_system_package "tmux"
+    fi
+
     display_bar
-    display_info "OPERATING_SYSTEM: ${OPERATING_SYSTEM}"
-    display_info "OPERATING_SYSTEM_VERSION: ${OPERATING_SYSTEM_VERSION}"
-
-    # Update Git Submodules
-    display_bar
-
-
+    if [[ $TMUX_ATTACHED == "False" ]];then
+        # Load tmux
+        tmux list-sessions | grep "dotfiles"
+        if [[ $? -eq 1 ]]; then
+            display_info "Tmux: Starting new-session 'dotfiles'"
+            tmux new-session -d -s dotfiles
+        fi
+        display_info "Tmux: Attaching to session 'dotfiles'"
+        tmux send-keys "sh ./install.sh -bd" Enter
+        tmux attach-session -t dotfiles
+        display_warning "Tmux: Continuing execution in tmux session. Exiting."
+        exit 0
+    fi
+    load_configuration $PROFILE_FILENAME
 }
 
 # Functions
+handle_arguments() {
+    PROFILE_FILENAME="None"
+    while getopts ":p:hbd" opt;do
+        case $opt in
+            h)
+                display_bar
+                exit 1
+                ;;
+            d)
+                DEPENDENCIES_INSTALLED="True"
+                ;;
+            b)
+                TMUX_ATTACHED="True"
+                ;;
+            p)
+                PROFILE_FILENAME="$OPTARG"
+                ;;
+            \?)
+                display_error "Invalid option: -$OPTARG. Exiting." >&2
+                exit 1
+                ;;
+            :)
+                display_error "Option -$OPTARG requires an argument. Exiting." >&2
+                exit 1
+                ;;
+        esac
+    done
+}
+
 install_oh_my_zsh() {
     if [[ -e "${HOME}/.oh-my-zsh/oh-my-zsh.sh" ]]; then
         display_warning "Skipping Installation Oh-My-ZSH (Already Installed)"
@@ -175,6 +189,19 @@ install_spaceship_theme() {
     # sudo groupadd docker
     # sudo usermod -aG docker $USER
 # }
+help_message() {
+    display_bar
+    display_message """
+    dotfiles - Mike Abreu
+    This script will configure your terminal environment.
 
+    Options:
+    -p          Load a profile from json file.
+
+    Examples:
+    ./install.sh
+    ./install.sh -p profile-gui.json
+    """
+}
 # Main Execution
 main "$@"
