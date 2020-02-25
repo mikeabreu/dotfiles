@@ -9,60 +9,6 @@
 #     - macOS, CentOS, Debian, Ubuntu
 # 3. Allow different configurations from one dotfiles
 
-# Todo:
-# - Uninstall changes
-#     -> Uninstall all features or only some features
-
-# - Feature: Install Shell
-#     |>All Profiles
-#     -> Install zsh
-#         => macOS: default option || brew install zsh
-#         => Ubuntu/Debian: apt install zsh
-#         => CentOS/RedHat: dnf install zsh || yum install zsh || rpm install zsh
-#         => OpenBSD:
-#     -> Change shell for user to zsh
-#         => all: chsh -s /bin/zsh
-#     -> Update oh-my-zsh submodule
-#         => all: git submodule update --init
-#     -> Install oh-my-zsh
-#         -> Remove lines from install.sh script that stop automation. (i.e. env and chsh)
-#             => all: 
-#         => all: 
-#     -> Install spaceship prompt
-#         => all:
-#     -> Install zsh-autocomplete
-#         => all:
-#     -> Install: zsh-syntaxhighlight
-#         => all:
-#     -> Create symlink for ~/.zshrc to ~/dotfiles/.zshrc
-# - Feature: Install Text Editor
-#     |>Headless Profile
-#     -> Install vim
-#     -> Create symlink for ~/.vimrc to ~/dotfiles/.vimrc
-#     |>GUI Profile
-#     -> Install Visual Studio Code
-#     -> Create symlink for <<Config File Locations>>
-#     -> Install Extensions
-# - Feature: Install Fonts
-#     |>GUI Profile
-#     -> Install Fira Code
-#         => macOS: brew tap homebrew/cask-fonts;brew install font-fira-code
-# - Feature: Install tmux
-#     |> All Profiles
-#     -> Install tmux
-#     -> Create symlink for <<Config File Locations>>
-# - Feature: Install grc
-#     |> All Profiles
-#     -> Install grc
-#     -> Create symlink for <<Config File Locations>>
-# - Feature: Install Common PowerTools
-#     |> No Profiles
-#     -> Install axel
-#     -> Install ipsets
-#     -> Install fail2ban
-#     -> Install iptables
-#     -> Install gpg
-
 # Imports
 source lib-core.sh
 source lib-config.sh
@@ -84,6 +30,10 @@ main() {
         display_bar
         display_info "OPERATING_SYSTEM: ${OPERATING_SYSTEM}"
         display_info "OPERATING_SYSTEM_VERSION: ${OPERATING_SYSTEM_VERSION}"
+
+        if [[ $OPERATING_SYSTEM == 'Darwin' ]];then
+            install_brew
+        fi
 
         # Install dependencies for dotfiles to operate
         display_bar
@@ -139,8 +89,19 @@ handle_arguments() {
         esac
     done
 }
-
+install_brew() {
+    which brew 2>/dev/null
+    is_installed=$?
+    if [[ is_installed -eq 0 ]];then
+        display_success "Package 'brew' is already installed. Skipping."
+    else
+        display_info "Installing package manager 'brew' on the system."
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" && display_success \
+            "Package Manager brew has been successfully installed."
+    fi
+}
 install_oh_my_zsh() {
+    # TODO: update this function
     if [[ -e "${HOME}/.oh-my-zsh/oh-my-zsh.sh" ]]; then
         display_warning "Skipping Installation Oh-My-ZSH (Already Installed)"
     else
@@ -152,6 +113,7 @@ install_oh_my_zsh() {
     fi
 }
 install_spaceship_theme() {
+    # TODO: update this function
     if [[ -e "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt" ]]; then
         display_warning "Skipping Installation: Spaceship (Already Installed)"
     else
@@ -160,35 +122,46 @@ install_spaceship_theme() {
         ln -s "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt/spaceship.zsh-theme" "${HOME}/.oh-my-zsh/themes/spaceship.zsh-theme"
     fi
 }
+install_docker() {
+    # TODO: add macOS support
+    # TODO: add Ubuntu/Debian support
+    if [[ $OPERATING_SYSTEM == 'CentOS' ]];then
+        case $OPERATING_SYSTEM_VERSION in
+            8)
+                display_info "Installing Docker"
+                sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+                sudo dnf install docker-ce --nobest -y && display_success "Successfully installed docker service."
+                sudo systemctl start docker && display_success "Successfully started docker service."
+                sudo systemctl enable docker && display_success "Successfully enabled docker service on startup."
+                sudo groupadd docker && display_success "Successfully added group 'docker'."
+                sudo usermod -aG docker $USER && display_success "Successfully added $USER to group 'docker'."
+                ;;
+            7)
+                sudo yum remove docker \
+                    docker-client \
+                    docker-client-latest \
+                    docker-common \
+                    docker-latest \
+                    docker-latest-logrotate \
+                    docker-logrotate \
+                    docker-engine
+                sudo yum install -y yum-utils \
+                    device-mapper-persistent-data \
+                    lvm2
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                sudo yum install docker-ce docker-ce-cli containerd.io  && display_success "Successfully installed docker service."
+                sudo systemctl start docker && display_success "Successfully started docker service."
+                sudo systemctl enable docker && display_success "Successfully enabled docker service on startup."
+                sudo groupadd docker && display_success "Successfully added group 'docker'."
+                sudo usermod -aG docker $USER && display_success "Successfully added $USER to group 'docker'."
+                ;;
+            *)
+                display_warning "Unsupported Operating System version. Skipping."
+                ;;
 
-# install_docker() {
-    # if OS = CentOS and OS_V = CentOS 8
-    # Install Docker
-    # dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
-    # dnf install docker-ce --nobest -y
-    # systemctl start docker
-    # systemctl enable docker
-
-    # if OS = CentOS and OS_V = CentOS 7
-    # Install Docker
-    # sudo yum remove docker \
-    #              docker-client \
-    #              docker-client-latest \
-    #              docker-common \
-    #              docker-latest \
-    #              docker-latest-logrotate \
-    #              docker-logrotate \
-    #              docker-engine
-    # sudo yum install -y yum-utils \
-    #     device-mapper-persistent-data \
-    #     lvm2
-    # sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-    # sudo yum install docker-ce docker-ce-cli containerd.io
-    # sudo systemctl start docker
-    # sudo systemctl enable docker
-    # sudo groupadd docker
-    # sudo usermod -aG docker $USER
-# }
+        esac
+    fi
+}
 help_message() {
     display_bar
     display_message """
