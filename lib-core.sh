@@ -3,20 +3,10 @@
 # Library of bash functions and configuration variables.
 
 # Global Variables
+_LOADED_LIB_CORE="True"
 OPERATING_SYSTEM="Unknown"
 OPERATING_SYSTEM_VERSION="Unknown"
 SYSTEM_PACKAGE_MANAGER_UPDATED="False"
-
-# Test Main
-# main() {
-    # display_bar
-    # check_operating_system
-    # # Determine operating system and version
-    # display_bar
-    # display_info "OPERATING_SYSTEM: ${OPERATING_SYSTEM}"
-    # display_info "OPERATING_SYSTEM_VERSION: ${OPERATING_SYSTEM_VERSION}"
-    # install_system_package jq
-# }
 
 # Functions
 check_operating_system() {
@@ -83,18 +73,30 @@ install_system_package() {
         case $OPERATING_SYSTEM in
             Ubuntu | Debian)
                 display_info "Command: sudo apt install -y $1"
-                sudo apt install -y $1 \
-                    && display_success "Successfully installed system package '$1'."
+                sudo apt install -y $1
+                if [[ $? -eq 0 ]];then
+                    display_success "Successfully installed system package '$1'."
+                else
+                    display_error "Something went wrong during package installation. Skipping."
+                fi
                 ;;
             CentOS)
                 display_info "Command: sudo yum install -y $1"
-                sudo yum install -y $1 \
-                    && display_success "Successfully installed system package '$1'."
+                sudo yum install -y $1
+                if [[ $? -eq 0 ]];then
+                    display_success "Successfully installed system package '$1'."
+                else
+                    display_error "Something went wrong during package installation. Skipping."
+                fi
                 ;;
             Darwin)
                 display_info "Command: brew install -y $1"
-                brew install $1 \
-                    && display_success "Successfully installed system package '$1'."
+                brew install $1
+                if [[ $? -eq 0 ]];then
+                    display_success "Successfully installed system package '$1'."
+                else
+                    display_error "Something went wrong during package installation. Skipping."
+                fi
                 ;;
             *) 
                 display_error "Unknown system package manager. Exiting."; 
@@ -156,5 +158,4 @@ add_terminal_colors() {
     for HEX in {0..255};do eval "CB${HEX}"="\\\033[48\;5\;${HEX}m";done
 }
 add_terminal_colors
-# Testing Main
 # main "$@"

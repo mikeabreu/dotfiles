@@ -1,0 +1,40 @@
+{
+	"name": "default",
+	"safe_file_replacement": true,
+	"tmux": true,
+	"tmux_attach": true,
+    "shell": "zsh",
+    "shell_framework": "oh-my-zsh",
+    "shell_theme": "spaceship-prompt",
+	"shell_plugins": [
+        {"name": "git"},
+        {"name": "aws"},
+        {"name": "docker"},
+        {"name": "docker-compose"},
+        {"name": "docker-machine"},
+        {"name": "terraform"},
+        {"name": "tmux"},
+        {"name": "vscode"},
+        {"name": "python"},
+        {"name": "virtualenv"},
+        {"name": "nmap"},
+        {"name": "osx"},
+        {
+            "name": "zsh-autocomplete",
+            "install": "True"
+        },
+        {
+            "name": "zsh-syntax-highlighting",
+            "install": "True"
+        }
+	],
+	"system_packages": [
+        {"name": "vim"},
+        {"name": "git"},
+        {"name": "curl"},
+        {"name": "wget"},
+        {"name": "grc"},
+        {"name": "htop"}
+    ],
+    "custom_install": []
+}
