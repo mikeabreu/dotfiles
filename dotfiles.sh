@@ -4,6 +4,7 @@
 #============================
 #   Imports
 #============================
+REQUIRE_BASH_4_4=false
 [[ -r "lib/lib-core.sh" ]] && source "lib/lib-core.sh" || exit 1
 [[ -r "lib/lib-dotfiles.sh" ]] && source "lib/lib-dotfiles.sh" || exit 1
 
