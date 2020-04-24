@@ -1,8 +1,6 @@
 {
-	"name": "default",
-	"safe_file_replacement": true,
-	"tmux": true,
-	"tmux_attach": true,
+	"name": "macOS",
+	"safe_file": true,
     "shell": "zsh",
     "shell_framework": "oh-my-zsh",
     "shell_theme": "spaceship-prompt",
@@ -20,15 +18,15 @@
         {"name": "nmap"},
         {"name": "osx"},
         {
-            "name": "zsh-autocomplete",
-            "install": "True"
+            "name": "zsh-autosuggestions",
+            "install": true
         },
         {
             "name": "zsh-syntax-highlighting",
-            "install": "True"
+            "install": true
         }
 	],
-	"system_packages": [
+	"packages": [
         {"name": "vim"},
         {"name": "git"},
         {"name": "curl"},
