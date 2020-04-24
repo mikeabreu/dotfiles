@@ -151,7 +151,7 @@ function install_brew {
     fi
 }
 function install_bash {
-    check_bash_version && display_info "Package 'bash' is already 4.4 of higher. Skipping." && return 0
+    check_bash_version && display_success "Package 'bash' is already 4.4 of higher. Skipping." && return 0
     display_info "Installing package 'bash' with brew."
     brew install bash
     return $?

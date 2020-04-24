@@ -105,29 +105,29 @@ function install_profile() {
     display_bar
 }
 function display_profile() {
-    display_message "${CGREEN}PROFILE_NAME:${CE} ${_CONFIG_NAME}"
+    display_message "${CGREEN}PROFILE_NAME:${CE} ${CWHITE} ${_CONFIG_NAME}"
     display_bar
-    display_message "${CGREEN}SHELL:${CE} ${_CONFIG_SHELL}"
-    display_message "${CGREEN}SHELL_FRAMEWORK:${CE} ${_CONFIG_SHELL_FRAMEWORK}"
-    display_message "${CGREEN}SHELL_THEME:${CE} ${_CONFIG_SHELL_THEME}"
+    display_message "${CGREEN}SHELL:${CE} ${CWHITE} ${_CONFIG_SHELL}"
+    display_message "${CGREEN}SHELL_FRAMEWORK:${CE} ${CWHITE} ${_CONFIG_SHELL_FRAMEWORK}"
+    display_message "${CGREEN}SHELL_THEME:${CE} ${CWHITE} ${_CONFIG_SHELL_THEME}"
     display_message "${CGREEN}SHELL_PLUGINS:${CE}"
     for plugin in ${_CONFIG_SHELL_PLUGINS_NONINSTALL[@]}; do
-        display_message "\t${CGREEN}- PLUGIN:${CE} ${plugin}"
+        display_message "\t${CGREEN}- PLUGIN:${CE} ${CWHITE} ${plugin}"
     done
     display_message "${CGREEN}SHELL_PLUGINS_INSTALL:${CE}"
     for plugin in ${_CONFIG_SHELL_PLUGINS_INSTALL[@]}; do
-        display_message "\t${CGREEN}- PLUGIN:${CE} ${plugin}"
+        display_message "\t${CGREEN}- PLUGIN:${CE} ${CWHITE} ${plugin}"
     done
     display_message "${CGREEN}PACKAGES:${CE}"
     for package in ${_CONFIG_PACKAGES[@]}; do
-        display_message "\t${CGREEN}- PACKAGE:${CE} ${package}"
+        display_message "\t${CGREEN}- PACKAGE:${CE} ${CWHITE} ${package}"
     done
     display_bar
 }
 #============================
 #   Helper Functions
 #============================
-function _config_validate() {
+function _config_validate {
     display_info "Validating profile."
     #
     # Validate: Name
@@ -233,7 +233,7 @@ function _config_validate() {
 #============================
 #   Core Installers       
 #============================
-function _install_shell() {
+function _install_shell {
     display_bar
     display_message "Installing/Configuring Shell"
     which $_CONFIG_SHELL >/dev/null
@@ -245,7 +245,7 @@ function _install_shell() {
     display_info "Changing user shell to '${new_shell}'"
     chsh -s $new_shell
 }
-function _install_shell_framework() {
+function _install_shell_framework {
     display_bar
     display_message "Installing Shell Framework"
     case $_CONFIG_SHELL_FRAMEWORK in
@@ -258,7 +258,7 @@ function _install_shell_framework() {
             ;;
     esac
 }
-function _install_shell_theme() {
+function _install_shell_theme {
     display_bar
     display_message "Installing Shell Theme"
     case $_CONFIG_SHELL_THEME in
@@ -271,7 +271,7 @@ function _install_shell_theme() {
             ;;
     esac
 }
-function _install_shell_plugins() {
+function _install_shell_plugins {
     display_bar
     display_message "Installing Shell Plugins"
     for plugin in ${_CONFIG_SHELL_PLUGINS[@]}; do
@@ -299,7 +299,7 @@ function _install_shell_plugins() {
     done
     sed "s|%%PLUGIN_LIST%%|$(echo ${_CONFIG_SHELL_PLUGINS[@]})|g" "configs/zsh/.zshrc_default" > "${DOTFILES_HOME}/.zshrc"
 }
-function _install_packages() {
+function _install_packages {
     display_bar
     display_message "Installing Packages"
     for package in ${_CONFIG_PACKAGES[@]}; do
@@ -312,7 +312,7 @@ function _install_packages() {
 #============================
 #   Custom Installers       
 #============================
-function _install_oh_my_zsh() {
+function _install_oh_my_zsh {
     if [[ -e "${DOTFILES_HOME}/.oh-my-zsh/oh-my-zsh.sh" ]]; then
         display_warning "Skipping Installation Oh-My-ZSH (Already Installed)"
         return
@@ -346,7 +346,7 @@ function _install_oh_my_zsh() {
         exit 1
     }
 }
-function _install_spaceship_theme() {
+function _install_spaceship_theme {
     # TODO: update this function
     if [[ -e "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt" ]]; then
         display_warning "Skipping Installation: Spaceship (Already Installed)"
@@ -356,7 +356,7 @@ function _install_spaceship_theme() {
         ln -s "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt/spaceship.zsh-theme" "${HOME}/.oh-my-zsh/themes/spaceship.zsh-theme"
     fi
 }
-function _install_docker() {
+function _install_docker {
     # TODO: add macOS support
     # TODO: add Ubuntu/Debian support
     if [[ $OPERATING_SYSTEM == 'CentOS' ]];then
