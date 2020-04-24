@@ -305,10 +305,10 @@ function prompt_user {
     local _message="${_args[message]:-"Do you wish to continue with the program [Y/n]: "}"
     local _default_action="${_args[default_action]:-"Y"}"
     local _warning_message="${_args[warning_message]:-""}"
-    local _success_message="${_args[success_message]:-"Success"}"
-    local _failure_message="${_args[failure_message]:-"Failure"}"
+    local _success_message="${_args[success_message]:-""}"
+    local _failure_message="${_args[failure_message]:-""}"
     local _exit_on_failure="${_args[exit_on_failure]:-true}"
-    local _error_message="${_args[error_message]:-"Error invalid input."}"
+    local _error_message="${_args[error_message]:-""}"
     # debug messaging
     if [[ $DEBUG == true ]];then
         display_info "Message: $_message"
@@ -326,19 +326,13 @@ function prompt_user {
     # Assign default action
     local user_response=${_user_response:-$_default_action}
     case $user_response in
-        [yY][eE][sS]|[yY])
-            [[ ! -z "$_success_message" ]] && display_success "$_success_message"
-            return 0
-            ;;
-        [nN][oO]|[nN])
-            [[ ! -z "$_failure_message" ]] && display_warning "$_failure_message"
+        [yY][eE][sS]|[yY])  [[ ! -z "$_success_message" ]] && display_success "$_success_message"
+            return 0 ;;
+        [nN][oO]|[nN])  [[ ! -z "$_failure_message" ]] && display_warning "$_failure_message"
             [[ $_exit_on_failure == true ]] && exit 1
-            return 1
-            ;;
-        *)
-            [[ ! -z "$_error_message" ]] && display_error "$_error_message"
-            exit 1
-            ;;
+            return 1 ;;
+        *)  [[ ! -z "$_error_message" ]] && display_error "$_error_message"
+            exit 1 ;;
     esac
     # If not returned through case then return unsuccessfully.
     return 1

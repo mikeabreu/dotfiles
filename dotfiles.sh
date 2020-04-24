@@ -100,8 +100,7 @@ function main {
             failure_message="You were not ready, run with -t to skip tmux." \
             success_message="" error_message="" warning_message=""
         display_info "Tmux: Attaching to session 'dotfiles'"
-        [[ $OPERATING_SYSTEM == 'Darwin' ]] && tmux send-keys "sh ./dotfiles.sh -td" Enter
-        [[ $OPERATING_SYSTEM != 'Darwin' ]] && tmux send-keys "./dotfiles.sh -td" Enter
+        tmux send-keys "./dotfiles.sh -td" Enter
         tmux attach-session -t dotfiles
         display_warning "Tmux: Continuing execution in tmux session. Exiting."
         exit 0
