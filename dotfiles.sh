@@ -59,8 +59,8 @@ function main {
         # Welcome Message
         help_message
         display_bar
-        display_info "${CGREEN}OPERATING_SYSTEM:${CE} ${OPERATING_SYSTEM}"
-        display_info "${CGREEN}OPERATING_SYSTEM_VERSION:${CE} ${OPERATING_SYSTEM_VERSION}"
+        display_info "${CGREEN}OPERATING_SYSTEM:${CE} ${CWHITE} ${OPERATING_SYSTEM}"
+        display_info "${CGREEN}OPERATING_SYSTEM_VERSION:${CE} ${CWHITE} ${OPERATING_SYSTEM_VERSION}"
 
         # Prompt user for program execution.
         display_warning "This program will install packages and change your terminal configuration."
@@ -146,7 +146,8 @@ function install_brew {
         display_success "Package 'brew' is already installed. Skipping."
     else
         display_info "Installing package manager 'brew' on the system."
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" &&
+        # /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" &&
             display_success "Package Manager brew has been successfully installed."
     fi
 }

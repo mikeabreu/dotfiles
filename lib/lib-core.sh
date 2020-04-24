@@ -250,9 +250,9 @@ function install_system_package() {
 #============================
 function _display_message() {
     case $OPERATING_SYSTEM in
-        Ubuntu | Debian) echo -e "$1 $2 ${CE} ${@:3} ${CE}" ;;
-        Darwin) echo -e "$1 $2 ${CE} ${@:3} ${CE}" ;;
-        *) echo -e "$1 $2 ${CE} ${@:3} ${CE}" ;;
+        Ubuntu | Debian) echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}" ;;
+        Darwin) echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}" ;;
+        *) echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}" ;;
     esac
 }
 function display_message() {
@@ -272,16 +272,16 @@ function display_error() {
 }
 function display_prompt() {
     case $OPERATING_SYSTEM in
-        Ubuntu | Debian) echo -ne "$CYELLOW [!] ${CE} ${@} ${CE}" ;;
-        Darwin) echo -ne "$CYELLOW [!] ${CE} ${@} ${CE}" ;;
-        *) echo -ne "$CYELLOW [!] ${CE} ${@} ${CE}" ;;
+        Ubuntu | Debian) echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}" ;;
+        Darwin) echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}" ;;
+        *) echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}" ;;
     esac
 }
 function display_bar() {
     CCOLOR=$1:=$CWHITE
     case $OPERATING_SYSTEM in
         Ubuntu | Debian) echo -e "${1}===============================================================================${CE}" ;;
-        Darwin) echo "${1}===============================================================================${CE}" ;;
+        Darwin) echo -e "${1}===============================================================================${CE}" ;;
         *) echo -e "${1}===============================================================================${CE}" ;;
     esac
 }
