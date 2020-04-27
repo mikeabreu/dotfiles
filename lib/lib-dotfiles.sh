@@ -4,6 +4,7 @@
 #============================
 #   Dependency Check
 #============================
+REQUIRE_BASH_4_4=true
 if [[ $_LOADED_LIB_CORE == false ]];then
     if [[ -e lib-core.sh ]];then
         source lib-core.sh
@@ -14,7 +15,6 @@ if [[ $_LOADED_LIB_CORE == false ]];then
         exit 1
     fi
 fi
-
 #============================
 #   Configuration Structure
 #============================
@@ -40,8 +40,12 @@ fi
 #============================
 #   Global Variables    
 #============================
+declare -A _G_CONFIG
 _G_PACKAGE_ERROR_LIST=()
-
+#============================
+#   Private Global Variables
+#============================
+_LOADED_LIB_DOTFILES=true
 #============================
 #   Functions
 #============================
@@ -51,12 +55,7 @@ function load_profile() {
     #
     PROFILE_FILENAME=${PROFILE_FILENAME:-1}
     # Check if jq is installed
-    which jq >/dev/null
-    is_installed=$?
-    if [[ is_installed -ne 0 ]];then
-        display_error "Command 'jq' is missing from PATH. Exiting."
-        exit 1
-    fi
+    ! command_exists jq && display_error "Command 'jq' is missing from PATH. Exiting." && exit 1
     # Load profile
     if [[ $1 == "None" ]];then
         PROFILE_SELECTED='default'
@@ -65,7 +64,7 @@ function load_profile() {
         PROFILE_SELECTED=$(jq '.name' $1)
     fi
     # Check that the structure of profile is valid
-    _config_validate
+    validate_profile
     # Show the user the profile being loaded
     display_profile
 }
@@ -74,34 +73,21 @@ function install_profile() {
     #   Syntax: install_profile filename_of_profile
     #
     # Prompt user to continue with installation
-    display_prompt "Do you wish to install this profile [Y/n]:"
-    read user_response
-    # Default to Yes
-    user_response=${user_response:-"Y"}
-    case $user_response in
-        [yY][eE][sS]|[yY])
-            display_info "Continuing with profile installation."
-            ;;
-        [nN][oO]|[nN])
-            display_warning "User chose to not load profile. Exiting."
-            exit 1
-            ;;
-        *)
-            display_error "Invalid option. Exiting."
-            exit 1
-            ;;
-    esac
+    prompt_user message="Do you wish to install this profile [Y/n]:" \
+        success_message="Continuing with profile installation." \
+        failure_message="User chose to not load profile. Exiting." \
+          error_message="Invalid option. Exiting."
     # If still executing, user wanted to install profile.
     #TODO: install shell
-    _install_shell
+    install_shell
     #TODO: install shell framework
-    _install_shell_framework
+    install_shell_framework
     #TODO: install shell theme
     # _install_shell_theme
     #TODO: install all shell plugins
-    _install_shell_plugins
+    install_shell_plugins
     #TODO: install all packages.
-    _install_packages
+    install_system_packages
     display_bar
 }
 function display_profile() {
@@ -127,7 +113,7 @@ function display_profile() {
 #============================
 #   Helper Functions
 #============================
-function _config_validate {
+function validate_profile {
     display_info "Validating profile."
     #
     # Validate: Name
@@ -231,11 +217,11 @@ function _config_validate {
     display_bar
 }
 #============================
-#   Core Installers       
+#   Dotfile Config Installers       
 #============================
-function _install_shell {
+function install_shell {
     display_bar
-    display_message "Installing/Configuring Shell"
+    display_header "Installing/Configuring Shell"
     which $_CONFIG_SHELL >/dev/null
     local is_installed=$?
     if [[ $is_installed -ne 0 ]];then
@@ -245,9 +231,9 @@ function _install_shell {
     display_info "Changing user shell to '${new_shell}'"
     chsh -s $new_shell
 }
-function _install_shell_framework {
+function install_shell_framework {
     display_bar
-    display_message "Installing Shell Framework"
+    display_header "Installing Shell Framework"
     case $_CONFIG_SHELL_FRAMEWORK in
         oh-my-zsh)
             _install_oh_my_zsh
@@ -258,9 +244,9 @@ function _install_shell_framework {
             ;;
     esac
 }
-function _install_shell_theme {
+function install_shell_theme {
     display_bar
-    display_message "Installing Shell Theme"
+    display_header "Installing Shell Theme"
     case $_CONFIG_SHELL_THEME in
         spaceship-prompt)
             display_info "Installing Spaceship Prompt theme"
@@ -271,9 +257,9 @@ function _install_shell_theme {
             ;;
     esac
 }
-function _install_shell_plugins {
+function install_shell_plugins {
     display_bar
-    display_message "Installing Shell Plugins"
+    display_header "Installing Shell Plugins"
     for plugin in ${_CONFIG_SHELL_PLUGINS[@]}; do
         case $plugin in
             zsh-syntax-highlighting)
@@ -299,99 +285,13 @@ function _install_shell_plugins {
     done
     sed "s|%%PLUGIN_LIST%%|$(echo ${_CONFIG_SHELL_PLUGINS[@]})|g" "configs/zsh/.zshrc_default" > "${DOTFILES_HOME}/.zshrc"
 }
-function _install_packages {
+function install_system_packages {
     display_bar
-    display_message "Installing Packages"
+    display_header "Installing Packages"
     for package in ${_CONFIG_PACKAGES[@]}; do
         install_system_package $package
         if [[ $_LAST_ELEVATED_CMD_EXIT_CODE -ne 0 ]]; then
             display_error "Package '${package}' had an error occur while installing."
         fi
     done
-}
-#============================
-#   Custom Installers       
-#============================
-function _install_oh_my_zsh {
-    if [[ -e "${DOTFILES_HOME}/.oh-my-zsh/oh-my-zsh.sh" ]]; then
-        display_warning "Skipping Installation Oh-My-ZSH (Already Installed)"
-        return
-    fi
-    # Prevent the cloned repository from having insecure permissions. Failing to do
-    # so causes compinit() calls to fail with "command not found: compdef" errors
-    # for users with insecure umasks (e.g., "002", allowing group writability). Note
-    # that this will be ignored under Cygwin by default, as Windows ACLs take
-    # precedence over umasks except for filesystems mounted with option "noacl".
-    umask g-w,o-w
-
-    display_info "${CBLUE}Cloning Oh My Zsh...${CE}"
-
-    command_exists git || {
-        error "git is not installed"
-        exit 1
-    }
-
-    if [ "$OPERATING_SYSTEM" = cygwin ] && git --version | grep -q msysgit; then
-        error "Windows/MSYS Git is not supported on Cygwin"
-        error "Make sure the Cygwin git package is installed and is first on the \$PATH"
-        exit 1
-    fi
-
-    git clone -c core.eol=lf -c core.autocrlf=false \
-        -c fsck.zeroPaddedFilemode=ignore \
-        -c fetch.fsck.zeroPaddedFilemode=ignore \
-        -c receive.fsck.zeroPaddedFilemode=ignore \
-        --depth=1 --branch "master" "https://github.com/ohmyzsh/ohmyzsh" "${DOTFILES_HOME}/.oh-my-zsh" || {
-        error "git clone of oh-my-zsh repo failed"
-        exit 1
-    }
-}
-function _install_spaceship_theme {
-    # TODO: update this function
-    if [[ -e "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt" ]]; then
-        display_warning "Skipping Installation: Spaceship (Already Installed)"
-    else
-        display_success "[+] Installing ZSH Theme:${CWHITE} Spaceship Prompt"
-        copy_recursive "${CWD}/spaceship-prompt" "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt"
-        ln -s "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt/spaceship.zsh-theme" "${HOME}/.oh-my-zsh/themes/spaceship.zsh-theme"
-    fi
-}
-function _install_docker {
-    # TODO: add macOS support
-    # TODO: add Ubuntu/Debian support
-    if [[ $OPERATING_SYSTEM == 'CentOS' ]];then
-        case $OPERATING_SYSTEM_VERSION in
-            8)
-                display_info "Installing Docker"
-                sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
-                sudo dnf install docker-ce --nobest -y && display_success "Successfully installed docker service."
-                sudo systemctl start docker && display_success "Successfully started docker service."
-                sudo systemctl enable docker && display_success "Successfully enabled docker service on startup."
-                sudo groupadd docker && display_success "Successfully added group 'docker'."
-                sudo usermod -aG docker $USER && display_success "Successfully added $USER to group 'docker'."
-                ;;
-            7)
-                sudo yum remove docker \
-                    docker-client \
-                    docker-client-latest \
-                    docker-common \
-                    docker-latest \
-                    docker-latest-logrotate \
-                    docker-logrotate \
-                    docker-engine
-                sudo yum install -y yum-utils \
-                    device-mapper-persistent-data \
-                    lvm2
-                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                sudo yum install docker-ce docker-ce-cli containerd.io  && display_success "Successfully installed docker service."
-                sudo systemctl start docker && display_success "Successfully started docker service."
-                sudo systemctl enable docker && display_success "Successfully enabled docker service on startup."
-                sudo groupadd docker && display_success "Successfully added group 'docker'."
-                sudo usermod -aG docker $USER && display_success "Successfully added $USER to group 'docker'."
-                ;;
-            *)
-                display_warning "Unsupported Operating System version. Skipping."
-                ;;
-        esac
-    fi
 }

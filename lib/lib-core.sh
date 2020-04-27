@@ -1,245 +1,235 @@
 #!/usr/bin/env bash
 # Author: Michael Abreu
 # Version: 0.1.0
+# Description: This library file contains lots of useful bash functions that I've
+#   created previously. It's useful to include this lib-core file at the top of a
+#   new script you are creating. It brings in lots of tested functionality.
+# Handler to avoid multiple sourcing of this file
+[[ $_LOADED_LIB_CORE == true ]] && [[ $DEBUG == true ]] &&
+    display_debug "Duplicate source attempt on lib-core.sh. Skipping source attempt." &&
+    return 0
+[[ $_LOADED_LIB_CORE == true ]] && return 0
 #============================
-#   Script Configurable Variables
+#   Script Variables
 #============================
-REQUIRE_BASH_4_4=${REQUIRE_BASH_4_4:-true}
-REQUIRE_PRIVILEGE=${REQUIRE_PRIVILEGE:-false}
-VERBOSE=${VERBOSE:-false}
-DEBUG=${DEBUG:-false}
+#   Assign these before sourcing this file to overwrite defaults
+declare _LIB_SETUP_ACTIONS=${_LIB_SETUP_ACTIONS:-true}
+declare -A _LIBCORE_LOAD_FUNCTIONS=(
+    [CORE]=${_LIBCORE_LOAD_FUNCTIONS[CORE]:-true}
+    [DISPLAY]=${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]:-true}
+    [SYSTEM]=${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]:-true}
+    [MISC]=${_LIBCORE_LOAD_FUNCTIONS[MISC]:-true}
+    [TRAP_HANDLERS]=${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]:-true}
+)
+declare -p _LIBCORE_LOAD_FUNCTIONS
+declare REQUIRE_BASH_4_4=${REQUIRE_BASH_4_4:-true}
+declare REQUIRE_PRIVILEGE=${REQUIRE_PRIVILEGE:-false}
+declare ENABLE_TRAP_HANDLERS=${ENABLE_TRAP_HANDLERS:-true}
+declare VERBOSE=${VERBOSE:-false}
+declare DEBUG=${DEBUG:-false}
+declare LIBCORE_LOGS=${LIBCORE_LOGS:-"${HOME}/.logs/"}
 #============================
 #   Public Global Variables
 #============================
-OPERATING_SYSTEM=${OPERATING_SYSTEM:-"Unknown"}
-OPERATING_SYSTEM_VERSION=${OPERATING_SYSTEM_VERSION:-"Unknown"}
-IS_PRIVILEGED=false
-IS_ROOT=false
-IS_MAC_USER=false
-HAS_SUDO=false
-CAN_SUDO=false
+#   Don't Change These
+#   These variables can be useful to query directly
+declare OPERATING_SYSTEM=${OPERATING_SYSTEM:-"Unknown"}
+declare OPERATING_SYSTEM_VERSION=${OPERATING_SYSTEM_VERSION:-"Unknown"}
+declare IS_PRIVILEGED=false
+declare IS_ROOT=false
+declare IS_MAC_USER=false
+declare HAS_SUDO=false
+declare CAN_SUDO=false
 #============================
 #   Private Global Variables
 #============================
-_SYSTEM_PACKAGE_MANAGER_UPDATED=false
-_LAST_ELEVATED_CMD_EXIT_CODE=0
-_LOADED_LIB_CORE=true
-
+#   Don't Change These
+declare _SYSTEM_PACKAGE_MANAGER_UPDATED=false
+declare _LAST_ELEVATED_CMD_EXIT_CODE=0
+declare _LOADED_LIB_CORE=true
 #============================
 #   Core Functions
 #============================
-function command_exists() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function command_exists {
     which "$1" >/dev/null 2>/dev/null || command -v "$1" >/dev/null 2>/dev/null
 }
-function file_exists() {
-    if [[ -e "$1" ]];then return 0; fi
+[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function check_privileges {
+    [[ $REQUIRE_PRIVILEGE == false ]] && return 0
+    [[ $EUID -eq 0 ]] && IS_ROOT=true && IS_PRIVILEGED=true
+    command_exists sudo && HAS_SUDO=true && CAN_SUDO=false
+    [[ $HAS_SUDO == true ]] && ! sudo -S true < /dev/null 2> /dev/null &&
+        display_warning "Testing user for 'sudo' rights. Exiting after 1 minute." &&
+        timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true
+    if [[ $DEBUG == true ]]; then
+        display_debug "Found the following privileges for current user:"
+        display_debug "\tIS_PRIVILEGED: ${IS_PRIVILEGED}"
+        display_debug "\tIS_ROOT: ${IS_ROOT}"
+        display_debug "\tHAS_SUDO: ${HAS_SUDO}"
+        display_debug "\tCAN_SUDO: ${CAN_SUDO}"
+    fi
+    sudo -S true < /dev/null 2> /dev/null && local IS_PRIVILEGED=true
+    [[ $IS_PRIVILEGED == true ]] && return 0
+    [[ $REQUIRE_PRIVILEGE == true ]] && [[ $IS_PRIVILEGED == false ]] &&
+        "Privileges are required to run this script. Exiting." && exit 1
     return 1
 }
-function check_privileges() {
-    [[ $REQUIRE_PRIVILEGE == false ]] && return 0
-    if [[ $OPERATING_SYSTEM == "Darwin" ]]; then
-        IS_MAC_USER=true
-    fi
-    if [[ $EUID -eq 0 ]]; then
-        # User is root
-        IS_ROOT=true
-        IS_PRIVILEGED=true
-    fi
-    command_exists sudo && _result=true || _result=false
-    if [[ $_result == true ]];then
-        # sudo is installed
-        HAS_SUDO=true
-        display_warning "Testing user for 'sudo' rights. Exiting after 1 minute."
-        timeout --foreground 1m sudo -v 2>/dev/null
-        sudo_validation=$?
-        if [[ $sudo_validation -eq 0 ]]; then
-            # User can use sudo, *Dangerous check* unclear commands allowed.
-            CAN_SUDO=true
-            IS_PRIVILEGED=true
-        else
-            CAN_SUDO=false
-            IS_PRIVILEGED=false
-        fi
-    fi
-    # VERBOSE PRINTING
-    if [[ $VERBOSE == true ]]; then
-        display_info "Found the following privileges for current user:"
-        display_message "IS_MAC_USER: ${IS_MAC_USER}"
-        display_message "IS_PRIVILEGED: ${IS_PRIVILEGED}"
-        display_message "IS_ROOT: ${IS_ROOT}"
-        display_message "HAS_SUDO: ${HAS_SUDO}"
-        display_message "CAN_SUDO: ${CAN_SUDO}"
-    fi
-    [[ $IS_MAC_USER == false ]] &&
-    [[ $IS_PRIVILEGED == false ]] &&
-        display_error "Privileges are required to run this script. Exiting." && exit 1
-}
-function check_operating_system() {
-    if [[ -f /etc/centos-release ]];then
-        # CentOS
-        OPERATING_SYSTEM=$(cat /etc/centos-release | awk '{print $1}')
-        OPERATING_SYSTEM_VERSION=$(cat /etc/centos-release | awk '{print $4}' | awk -F . '{print $1}')
-    elif [[ -f /etc/issue ]];then
-        # Ubuntu or Debian or unsupported
-        OPERATING_SYSTEM=$(cat /etc/issue | awk '{print $1}')
-        if [[ $OPERATING_SYSTEM == 'Ubuntu' ]];then
-            # Ubuntu
-            OPERATING_SYSTEM_VERSION=$(cat /etc/issue | awk '{print $2}' | awk -F . '{print $1}')
-        elif [[ $OPERATING_SYSTEM == 'Debian' ]];then
-            # Debian
-            OPERATING_SYSTEM_VERSION=$(cat /etc/issue | awk '{print $3}' | awk -F . '{print $1}')
-        else
-            # Unsupported
-            OPERATING_SYSTEM_VERSION='Unknown'
-            display_warning "Unknown Operating System Version. Warn."
-        fi
-    else
-        # macOS or unsupported OS
-        OPERATING_SYSTEM=$(uname -a | awk '{print $1}')
+[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function check_operating_system {
+    # Try to determine from '/etc/centos-release'
+    [[ -f /etc/centos-release ]] && 
+        OPERATING_SYSTEM=$(cat /etc/centos-release | awk '{print $1}') &&
+        OPERATING_SYSTEM_VERSION=$(cat /etc/centos-release | awk '{print $4}' | awk -F . '{print $1}') &&
+        return 0
+    # Try to determine from '/etc/issue'
+    [[ -f /etc/issue ]] && OPERATING_SYSTEM=$(cat /etc/issue | awk '{print $1}')
+    [[ $OPERATING_SYSTEM == 'Ubuntu' ]] && 
+        OPERATING_SYSTEM_VERSION=$(cat /etc/issue | awk '{print $2}' | awk -F . '{print $1}')
+    [[ $OPERATING_SYSTEM == 'Debian' ]] &&
+        OPERATING_SYSTEM_VERSION=$(cat /etc/issue | awk '{print $3}' | awk -F . '{print $1}')
+    # Try to determine from uname
+    [[ $OPERATING_SYSTEM == 'Unknown' ]] && OPERATING_SYSTEM=$(uname -a | awk '{print $1}')
+    [[ $OPERATING_SYSTEM_VERSION == 'Unknown' ]] && 
         OPERATING_SYSTEM_VERSION=$(uname -a | awk '{print $3}' | awk -F . '{print $1}')
-    fi
-    if [[ $OPERATING_SYSTEM == 'Unknown' ]];then 
-        display_error "Unknown Operating System. Exiting."
-        display_bar
-        exit 1
-    fi
+    # Debug Messages
+    [[ $DEBUG == true ]] && [[ $OPERATING_SYSTEM_VERSION == 'Unknown' ]] && 
+        display_debug "Unknown Operating System. Warn."
+    [[ $DEBUG == true ]] && [[ $OPERATING_SYSTEM_VERSION == 'Unknown' ]] && 
+        display_debug "Unknown Operating System Version. Warn."
+    return 0
 }
-function run_elevated_cmd() {
-    # Function Details:
-    #   Syntax: run_cmd <command> [arguments]
-    #   
-    # Global Options:
-    #   Set 'REQUIRE_PRIVILEGE=true' globally to require privileges to run commands.
-    #
-    # Example:
-    #   run_cmd apt update
-    
+[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function run_elevated_cmd {
     # Handle arguments being passed in
     raw_arguments=("$@")
     args=()
     for index in ${!raw_arguments[@]};do
-        if [[ $index -eq 0 ]]; then
-            cmd=${raw_arguments[$index]}
-        else
-            args+=( ${raw_arguments[$index]} )
-        fi
+        [[ $index -eq 0 ]] && cmd=${raw_arguments[$index]}
+        [[ $index -ne 0 ]] && args+=( ${raw_arguments[$index]} )
     done
     # Determine privileges and run command appropriately
-    if [[ $IS_PRIVILEGED == true ]]; then
-        if [[ $IS_ROOT == true ]]; then
-            display_info "Running command as root:${CRED} $cmd ${args[@]} ${CE}"
+    [[ $IS_PRIVILEGED != true ]] && return 1
+    if [[ $IS_ROOT == true ]]; then
+        display_info "Running command as root:${CRED} $cmd ${args[@]} ${CE}"
+        $cmd ${args[@]}
+        return "$?"
+    fi
+    if [[ $CAN_SUDO == true ]]; then
+        if [[ ( $IS_MAC_USER == true ) && ( $cmd == "brew" ) ]]; then
+            display_warning "Running brew install as user:${CGREEN} $cmd ${args[@]} ${CE}"
             $cmd ${args[@]}
-            _LAST_ELEVATED_CMD_EXIT_CODE=$?
-        elif [[ $CAN_SUDO == true ]]; then
-            if [[ ( $IS_MAC_USER == true ) && ( $cmd == "brew" ) ]]; then
-                display_warning "Running brew install as user:${CGREEN} $cmd ${args[@]} ${CE}"
-                $cmd ${args[@]}
-                _LAST_ELEVATED_CMD_EXIT_CODE=$?
-            else
-                display_info "Running command with sudo:${CGREEN} $cmd ${args[@]} ${CE}"
-                sudo $cmd ${args[@]}
-                _LAST_ELEVATED_CMD_EXIT_CODE=$?
-            fi
+            return "$?"
         else
-            display_error "Somehow you are privileged but aren't root and cannot sudo. Exiting."
-            exit 1
-        fi
-    else
-        if [[ $REQUIRE_PRIVILEGE == true ]]; then
-            display_error "Privileges are required to run this script. Exiting."
-            exit 1
-        else
-            display_warning "Running command without privileges:${CYELLOW} $cmd ${args[@]} ${CE}"
-            $cmd ${args[@]}
-            _LAST_ELEVATED_CMD_EXIT_CODE=$?
+            display_info "Running command with sudo:${CGREEN} $cmd ${args[@]} ${CE}"
+            sudo $cmd ${args[@]}
+            return "$?"
         fi
     fi
+    display_warning "Running command without privileges:${CYELLOW} $cmd ${args[@]} ${CE}"
+    $cmd ${args[@]}
+    return "$?"
 }
-#============================
-#   File Operations
-#============================
-#TODO:
-# safe_copy() {
-
-# }
-function safe_move() {
-    _tmp_from=$1
-    _tmp_to=$2
-    display_info "Moving file: ${_tmp_from} to ${_tmp_to}"
-    # if [[ -e $_tmp_to ]]; then
-        
-    # else
-
-    # fi
+[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function safe_copy {
+    local src_file="$1"
+    local dst_file="${2:-"./"}"
+    # grab last char to check if its '/'
+    local dst_last_char="${dst_file: -1}"
+    # determine src filename without path
+    local src_filename="$(echo $src_file | awk -F'/' '{print $NF}')"
+    # check if dst is a directory
+    if [[ -d "$dst_file" ]]; then
+        # If not "dst_file/", then add the '/' for "dst_file/src_filename"
+        [[ "$dst_last_char" != '/' ]] && 
+            local dst_path="${dst_file}/${src_filename}" \
+        ||  local dst_path="${dst_file}${src_filename}"
+        # Check if we need to backup any files that might be overwritten
+        [[ -e "$dst_path" ]] && backup_file "$dst_path"
+    fi
+    [[ ! -e "$dst_file" ]] && [[ "$dst_last_char" == '/' ]] &&
+            display_info "Making directory: $dst_file" &&
+            mkdir -p "$dst_file"
+    # Check if dst_file exists and isn't a directory.
+    [[ -e "$dst_file" ]] && [[ ! -d "$dst_file" ]] && backup_file "$dst_file"
+    # Perform copy operations
+    if [[ -d "$src_file" ]];then
+        [[ ! -z "$dst_path" ]] && display_info "Copying directory: $src_file -> $dst_path"
+        [[ -z "$dst_path" ]] && display_info "Copying directory: $src_file -> $dst_file"
+        [[ $DEBUG == true ]] && display_debug && cp -Rv "$src_file" "$dst_file" 2>/dev/null
+        [[ $DEBUG == false ]] && cp -R "$src_file" "$dst_file" 2>/dev/null
+        return "$?"
+    fi
+    [[ ! -z "$dst_path" ]] && display_info "Copying file: $src_file -> $dst_path"
+    [[ -z "$dst_path" ]] && display_info "Copying file: $src_file -> $dst_file"
+    [[ $DEBUG == true ]] && display_debug && cp -v "$src_file" "$dst_file" 2>/dev/null
+    [[ $DEBUG == false ]] && cp "$src_file" "$dst_file" 2>/dev/null
+    return "$?"
 }
-function backup_file() {
-    display_info "Backing up file: ${_tmp_to} to ${_tmp_to}.backup"
+[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function backup_file {
+    ratelimit 1
+    local src_file="$1"
+    local dst_file="$src_file.$(date +%s).backup"
+    # Recursive call.
+    [[ -e "$dst_file" ]] && display_warning "File exists: $dst_file performing recursive backup call" &&
+        backup_file "$src_file" "$dst_file" && return 1
+    # Display messages
+    [[ -d "$src_file" ]] && display_info "Backing up directory: $src_file -> $dst_file"
+    [[ -f "$src_file" ]] && display_info "Backing up file: $src_file -> $dst_file"
+    # Perform backup operations
+    [[ $DEBUG == true ]] && display_debug && cp -Rv "$src_file" "$dst_file" 2>/dev/null
+    [[ $DEBUG == false ]] && cp -R "$src_file" "$dst_file" 2>/dev/null
+    return "$?"
 }
 #============================
 #   System Package Management 
 #============================
-function update_system_package() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]} == true ]] && function update_system_package {
+    [[ -z "$OPERATING_SYSTEM" ]] && display_error "Unknown OS" && exit 1
     case $OPERATING_SYSTEM in
-        Ubuntu | Debian)
-            run_elevated_cmd apt update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true
-            ;;
-        CentOS)
-            run_elevated_cmd yum update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true
-            ;;
-        Darwin)
-            display_info "Running command: brew update"
-            run_elevated_cmd brew update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true
-            ;;
-        *) 
-            display_error "Unknown system package manager. Exiting."; 
-            exit 1
-            ;;
+        Ubuntu | Debian) run_elevated_cmd apt update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
+        CentOS) run_elevated_cmd yum update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
+        Darwin) run_elevated_cmd brew update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
+        *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
     esac
 }
-function install_system_package() {
-    package_name=$1
-    command_exists $1 && _result=true || _result=false
-    if [[ $_result == true ]];then
-        display_success "Package '$package_name' is already installed. Skipping."
-        _LAST_ELEVATED_CMD_EXIT_CODE=0
-    else
-        display_info "Attempting to install system package: '$package_name'."
-        if [[ $_SYSTEM_PACKAGE_MANAGER_UPDATED == false ]]; then
-            display_info "Updating system packages"
-            update_system_package
-        fi
-        case $OPERATING_SYSTEM in
-            Ubuntu | Debian)
-                run_elevated_cmd apt install -y $package_name
-                if [[ $_LAST_ELEVATED_CMD_EXIT_CODE -eq 0 ]];then
-                    display_success "Successfully installed system package '$package_name'."
-                else
-                    display_error "Something went wrong during package installation. Skipping."
-                fi
-                ;;
-            CentOS)
-                run_elevated_cmd yum install -y $package_name
-                if [[ $_LAST_ELEVATED_CMD_EXIT_CODE -eq 0 ]];then
-                    display_success "Successfully installed system package '$package_name'."
-                else
-                    display_error "Something went wrong during package installation. Skipping."
-                fi
-                ;;
-            Darwin)
-                display_info "Command: brew install -y $package_name"
-                run_elevated_cmd brew install $package_name
-                if [[ $_LAST_ELEVATED_CMD_EXIT_CODE -eq 0 ]];then
-                    display_success "Successfully installed system package '$package_name'."
-                else
-                    display_error "Something went wrong during package installation. Skipping."
-                fi
-                ;;
-            *) 
-                display_error "Unknown system package manager. Exiting."; 
-                exit 1
-                ;;
-        esac  
-    fi  
+[[ ${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]} == true ]] && function install_system_package {
+    display_bar
+    # Assign local variables
+    local package_name="$1"
+    # Check is command exists, return 0 if it does
+    command_exists $package_name && 
+        display_success "Package '$package_name' is already installed. Skipping." &&
+        _LAST_ELEVATED_CMD_EXIT_CODE=0 && 
+        return 0
+    # Attempt to install the system package
+    display_header "Attempting to install system package: '$package_name'."
+    # If system package manager hasn't been updated, then update it
+    [[ $_SYSTEM_PACKAGE_MANAGER_UPDATED == false ]] &&
+        display_info "Updating system packages" &&
+        update_system_package
+    # Determine which system package manager to use by OS
+    case $OPERATING_SYSTEM in
+        Ubuntu|Debian)  
+            # Use 'apt'
+            run_elevated_cmd apt install -y $package_name &&
+                display_success "Successfully installed system package '$package_name'." &&
+                return 0
+            display_error "Something went wrong during package installation. Skipping." &&
+                return 1 ;;
+        CentOS) 
+            # Use 'yum'
+            run_elevated_cmd yum install -y $package_name &&
+                display_success "Successfully installed system package '$package_name'." &&
+                return 0
+            display_error "Something went wrong during package installation. Skipping." &&
+                return 1;;
+        Darwin) 
+            # Use 'brew'
+            run_elevated_cmd brew install $package_name && 
+                display_success "Successfully installed system package '$package_name'." &&
+                return 0
+            display_error "Something went wrong during package installation. Skipping." &&
+                return 1;;
+        *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
+    esac
+    # If this didnt return from the case, return unsuccessfully.
+    return 1
 }
 # TODO:
 # check_system_package() {
@@ -248,54 +238,53 @@ function install_system_package() {
 #============================
 #   Display Functions     
 #============================
-function _display_message() {
-    case $OPERATING_SYSTEM in
-        Ubuntu | Debian) echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}" ;;
-        Darwin) echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}" ;;
-        *) echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}" ;;
-    esac
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function _display_message {
+    echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}"
+    # [[ log true ]] log action
 }
-function display_message() {
-    _display_message $CWHITE "     $@"
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function newline {
+    echo "" && return 0
 }
-function display_info() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_message {
+    _display_message $CWHITE "      $@"
+}
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_header {
+    _display_message $CPURPLE '[~]' "$@"
+}
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_info {
     _display_message $CBLUE '[*]' "$@"
 }
-function display_success() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_success {
     _display_message $CGREEN '[+]' "$@"
 }
-function display_warning() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_warning {
     _display_message $CYELLOW '[!]' "$@"
 }
-function display_error() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_error {
     _display_message $CRED '[-]' "$@"
 }
-function display_prompt() {
-    case $OPERATING_SYSTEM in
-        Ubuntu | Debian) echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}" ;;
-        Darwin) echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}" ;;
-        *) echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}" ;;
-    esac
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_debug {
+    [[ -z "$@" ]] && echo -ne "$CPINK [~] DEBUG OUTPUT:${CE} " && return 0
+    [[ ! -z "$@" ]] && _display_message $CPINK '[~] DEBUG:' "$@"
 }
-function display_bar() {
-    CCOLOR=$1:=$CWHITE
-    case $OPERATING_SYSTEM in
-        Ubuntu | Debian) echo -e "${1}===============================================================================${CE}" ;;
-        Darwin) echo -e "${1}===============================================================================${CE}" ;;
-        *) echo -e "${1}===============================================================================${CE}" ;;
-    esac
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_prompt {
+    echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}"
 }
-function display_array() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_bar {
+    CCOLOR=${1:-$CWHITE}
+    echo -e "${1}===============================================================================${CE}"
+}
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_array {
     local _raw_array=($1)
     display_info "Displaying Array:"
     for element in ${_raw_array[@]}; do
         display_message "\tElement: ${element}"
     done 
 }
-function prompt_user {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function prompt_user {
     ! check_bash_version && return 1
     # handle associative arguments
-    declare -A _args
+    local -A _args
     for _arg in "$@";do
         local key="$(echo "$_arg" | cut -f1 -d=)"
         local value="$(echo "$_arg" | cut -f2 -d=)"
@@ -310,15 +299,16 @@ function prompt_user {
     local _exit_on_failure="${_args[exit_on_failure]:-true}"
     local _error_message="${_args[error_message]:-""}"
     # debug messaging
-    if [[ $DEBUG == true ]];then
-        display_info "Message: $_message"
-        display_info "Default Action: $_default_action"
-        display_info "Warning Message: $_warning_message"
-        display_info "Success Message: $_success_message"
-        display_info "Failure Message: $_failure_message"
-        display_info "Exit on Failure: $_exit_on_failure"
-        display_info "Error Message: $_error_message"
-    fi
+    # if [[ $DEBUG == true ]];then
+    #     display_debug "Prompt User Variables:"
+    #     display_debug "Message: $_message"
+    #     display_debug "Default Action: $_default_action"
+    #     display_debug "Warning Message: $_warning_message"
+    #     display_debug "Success Message: $_success_message"
+    #     display_debug "Failure Message: $_failure_message"
+    #     display_debug "Exit on Failure: $_exit_on_failure"
+    #     display_debug "Error Message: $_error_message"
+    # fi
     # Prompt user for program execution.
     [[ ! -z "$_warning_message" ]] && display_warning "$_warning_message"
     display_prompt "$_message"
@@ -328,8 +318,9 @@ function prompt_user {
     case $user_response in
         [yY][eE][sS]|[yY])  [[ ! -z "$_success_message" ]] && display_success "$_success_message"
             return 0 ;;
-        [nN][oO]|[nN])  [[ ! -z "$_failure_message" ]] && display_warning "$_failure_message"
-            [[ $_exit_on_failure == true ]] && exit 1
+        [nN][oO]|[nN]) [[ $_exit_on_failure == true ]] && 
+            [[ ! -z "$_failure_message" ]] && display_error "$_failure_message" && exit 1
+            [[ ! -z "$_failure_message" ]] && display_warning "$_failure_message"
             return 1 ;;
         *)  [[ ! -z "$_error_message" ]] && display_error "$_error_message"
             exit 1 ;;
@@ -340,7 +331,7 @@ function prompt_user {
 #============================
 #   Misc Functions  
 #============================
-function add_terminal_colors() {
+[[ ${_LIBCORE_LOAD_FUNCTIONS[MISC]} == true ]] && function add_terminal_colors {
     # Reset Color
     CE="\033[0m"
     # Text: Common Color Names
@@ -350,9 +341,10 @@ function add_terminal_colors() {
     CBLUE="${CT}27m"
     CORANGE="${CT}202m"
     CYELLOW="${CT}226m"
-    CPURPLE="${CT}53m"
+    CPINK="${CT}13m"
+    CPURPLE="${CT}63m"
     CWHITE="${CT}255m"
-    # Text: All Hex Values
+    # Text: All Hex Values: C0 - C255
     for HEX in {0..255};do eval "C$HEX"="\\\033[38\;5\;${HEX}m";done
     # Background: Common Color Names
     CB="\033[48;5;"
@@ -361,50 +353,67 @@ function add_terminal_colors() {
     CBBLUE="${CB}27m"
     CBORANGE="${CB}202m"
     CBYELLOW="${CB}226m"
-    CBPURPLE="${CB}53m"
-    # Background: All Hex Values
+    CBPINK="${CB}13m"
+    CBPURPLE="${CB}63m"
+    # Background: All Hex Values: CB0 - CB255
     for HEX in {0..255};do eval "CB${HEX}"="\\\033[48\;5\;${HEX}m";done
 }
-function sigint_handler {
-    echo
-    display_error "Signal Interrupt was received, CTRL + C."
-    display_prompt "Do you wish to continue with the program [Y/n]: "
-        read user_response
-        # Default to Yes
-        user_response=${user_response:-"Y"}
-        case $user_response in
-            [yY][eE][sS]|[yY])
-                display_info "Attempting to continue with program execution. There might be errors."
-                ;;
-            [nN][oO]|[nN])
-                display_warning "User chose to not continue. Exiting."
-                exit 1
-                ;;
-            *)
-                display_error "Invalid option. Exiting."
-                exit 1
-                ;;
-        esac
-}
-function exit_handler {
-    display_info "Program exiting. Good bye."
-}
-function check_bash_version {
-    local _primary_version=$(echo $BASH_VERSION | grep -Eo '^[0-9]')
-    local _secondary_version=$(echo $BASH_VERSION | grep -Eo '^[0-9]\.[0-9]' | cut -f2 -d\.)
-    [[ $DEBUG == true ]] && echo "Bash Version: ${_primary_version}.${_secondary_version}"
+[[ ${_LIBCORE_LOAD_FUNCTIONS[MISC]} == true ]] && function check_bash_version {
+    [[ $DEBUG == true ]] && display_debug "Bash Version: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
     # If 4.X, check if it's 4.4 or higher, if 4.4+ then skip.
-    [[ "$_primary_version" -eq 4 ]] && [[ "$_secondary_version" -gt 3 ]] && return 0
+    [[ "${BASH_VERSINFO[0]}" -eq 4 ]] && [[ "${BASH_VERSINFO[1]}" -gt 3 ]] && return 0
     # if 5.x+ then skip.
-    [[ "$_primary_version" -gt 4 ]] && return 0
-    # Return false is lower version than 4.4
+    [[ "${BASH_VERSINFO[0]}" -gt 4 ]] && return 0
+    # Return false if lower version than 4.4
     return 1
+}
+[[ ${_LIBCORE_LOAD_FUNCTIONS[MISC]} == true ]] && function ratelimit {
+    local ratelimit="${1:-"1"}"
+    local current_runtime=$(date +%s)
+    if [[ -s "${LIBCORE_LOGS}/runtime" ]];then
+        local last_runtime="$(cat "${LIBCORE_LOGS}/runtime")"
+        local target_runtime=$(($last_runtime + $ratelimit))
+        local offset=$(($target_runtime - $current_runtime))
+        if [[ $DEBUG == true ]];then
+            display_debug "Ratelimit Variables:"
+            display_debug "Ratelimit: $ratelimit"
+            display_debug "Last Runtime: $last_runtime"
+            display_debug "Current Runtime: $current_runtime"
+            display_debug "Target Runtime: $target_runtime"
+            display_debug "Offset: $offset"
+        fi
+        [[ $target_runtime > $current_runtime ]] && sleep "$offset" && return 1
+    fi
+    date +%s > "${LIBCORE_LOGS}/runtime"
+    return 0
+}
+#============================
+#   Trap Handlers
+#============================
+[[ ${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]} == true ]] && function sigint_handler {
+    echo
+    prompt_user message="Do you wish to continue with the program [y/N]: " \
+        warning_message="Signal Interrupt was received, CTRL + C." \
+        success_message="Attempting to continue with program execution. There might be errors." \
+        failure_message="User chose to not continue. Exiting." \
+          error_message="Invalid option. Exiting." \
+         default_action="N"
+}
+[[ ${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]} == true ]] && function exit_handler {
+    local _result="$?"
+    [[ $_result -eq 0 ]] && [[ $VERBOSE == true ]] && display_success "Program is exiting succesfully. Good bye."
+    [[ $_result -ne 0 ]] && [[ $VERBOSE == true ]] && display_error "Program exited with an error. Good bye."
 }
 #============================
 #   Main Execution / Initialization
 #============================
-[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && echo "Script requires bash 4.4+" && exit 1
 add_terminal_colors
-check_operating_system
-check_privileges
-# main "$@"
+if [[ $_LIB_SETUP_ACTIONS == true ]];then
+    [[ $DEBUG == true ]] && display_debug "Loaded lib-core.sh file"
+    [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && display_error "Script requires bash 4.4+" && exit 1
+    [[ $ENABLE_TRAP_HANDLERS == true ]] && trap sigint_handler SIGINT
+    [[ $ENABLE_TRAP_HANDLERS == true ]] && trap exit_handler EXIT
+    [[ ! -e "$LIBCORE_LOGS" ]] && display_info "Making log folder: $LIBCORE_LOGS" && mkdir -p "$LIBCORE_LOGS"
+    check_operating_system
+    check_privileges
+fi
