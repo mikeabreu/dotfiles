@@ -5,6 +5,9 @@
 #   Dependency Check
 #============================
 REQUIRE_BASH_4_4=true
+[[ $_LOADED_LIB_DOTFILES == true ]] && [[ $DEBUG == true ]] &&
+    display_debug "Duplicate source attempt on lib-dotfiles.sh. Skipping source attempt." &&
+    return 0
 if [[ $_LOADED_LIB_CORE == false ]];then
     if [[ -e lib-core.sh ]];then
         source lib-core.sh

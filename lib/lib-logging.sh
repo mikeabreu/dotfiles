@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Author: Michael Abreu
 # Version: 0.1.0
+REQUIRE_BASH_4_4=true
 [[ $_LOADED_LIB_LOGGING == true ]] && [[ $DEBUG == true ]] &&
     display_debug "Duplicate source attempt on lib-logging.sh. Skipping source attempt." &&
     return 0
@@ -15,10 +16,7 @@ if [[ $_LOADED_LIB_CORE == false ]];then
         exit 1
     fi
 fi
-
-_LIB_SETUP_ACTIONS=true
-
-
+! check_bash_version && return 1
 
 
 #============================
