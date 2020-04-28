@@ -49,9 +49,13 @@ function check_privileges {
     [[ $REQUIRE_PRIVILEGE == false ]] && return 0
     [[ $EUID -eq 0 ]] && IS_ROOT=true && IS_PRIVILEGED=true
     command_exists sudo && HAS_SUDO=true && CAN_SUDO=false
-    [[ $HAS_SUDO == true ]] && ! sudo -S true < /dev/null 2> /dev/null &&
-        display_warning "Testing user for 'sudo' rights. Exiting after 1 minute." &&
-        timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true
+    if [[ $HAS_SUDO == true ]]; then
+        ! sudo -S true < /dev/null 2> /dev/null &&
+            display_warning "Testing user for 'sudo' rights. Exiting after 1 minute." &&
+            command_exists timeout && 
+                (timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true) 
+            || 
+                (sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true)
     if [[ $DEBUG == true ]]; then
         display_debug "Found the following privileges for current user:"
         display_debug "\tIS_PRIVILEGED: ${IS_PRIVILEGED}"
