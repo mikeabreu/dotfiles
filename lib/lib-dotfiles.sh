@@ -15,7 +15,7 @@ if [[ $_LOADED_LIB_CORE == false ]];then
         exit 1
     fi
 fi
-! check_bash_version && exit 1
+! check_bash_version && return 1
 #============================
 #   Global Variables    
 #============================
