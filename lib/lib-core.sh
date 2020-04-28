@@ -37,7 +37,6 @@ declare CAN_SUDO=false
 #============================
 #   Don't Change These
 declare _SYSTEM_PACKAGE_MANAGER_UPDATED=false
-declare _LAST_ELEVATED_CMD_EXIT_CODE=0
 declare _LOADED_LIB_CORE=true
 #============================
 #   Core Functions
@@ -50,7 +49,8 @@ function check_privileges {
     [[ $EUID -eq 0 ]] && IS_ROOT=true && IS_PRIVILEGED=true
     command_exists sudo && HAS_SUDO=true && CAN_SUDO=false
     if [[ $HAS_SUDO == true ]]; then
-        ! sudo -S true < /dev/null 2> /dev/null &&
+        sudo -S true </dev/null 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true
+        ! sudo -S true </dev/null 2>/dev/null &&
             display_warning "Testing user for 'sudo' rights. Exiting after 1 minute." &&
             command_exists timeout && 
                 (timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true) \
@@ -192,7 +192,6 @@ function install_system_package {
     # Check is command exists, return 0 if it does
     command_exists $package_name && 
         display_success "Package '$package_name' is already installed. Skipping." &&
-        _LAST_ELEVATED_CMD_EXIT_CODE=0 && 
         return 0
     # Attempt to install the system package
     display_header "Attempting to install system package: '$package_name'."
