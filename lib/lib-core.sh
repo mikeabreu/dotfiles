@@ -405,3 +405,4 @@ if [[ $_LIB_SETUP_ACTIONS == true ]];then
     check_operating_system
     check_privileges
 fi
+return 0

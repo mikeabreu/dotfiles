@@ -16,7 +16,7 @@ if [[ $_LOADED_LIB_CORE == false ]];then
         exit 1
     fi
 fi
-[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] & 
+[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] && 
     display_debug "lib-logging requires bash 4.4+" && return 1
 [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
 
@@ -27,3 +27,4 @@ fi
 if [[ $_LIB_SETUP_ACTIONS == true ]];then
     [[ $DEBUG == true ]] && display_debug "Loaded lib-core.sh file"
 fi
+return 0
