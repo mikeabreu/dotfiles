@@ -357,11 +357,11 @@ function ratelimit {
         local offset=$(($target_runtime - $current_runtime))
         if [[ $DEBUG == true ]];then
             display_debug "Ratelimit Variables:"
-            display_debug "Ratelimit: $ratelimit"
-            display_debug "Last Runtime: $last_runtime"
-            display_debug "Current Runtime: $current_runtime"
-            display_debug "Target Runtime: $target_runtime"
-            display_debug "Offset: $offset"
+            display_debug "\tRatelimit: $ratelimit"
+            display_debug "\tLast Runtime: $last_runtime"
+            display_debug "\tCurrent Runtime: $current_runtime"
+            display_debug "\tTarget Runtime: $target_runtime"
+            display_debug "\tOffset: $offset"
         fi
         [[ $target_runtime > $current_runtime ]] && sleep "$offset" && return 1
     fi
