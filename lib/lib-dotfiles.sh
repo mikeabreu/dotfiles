@@ -18,7 +18,9 @@ if [[ $_LOADED_LIB_CORE == false ]];then
         exit 1
     fi
 fi
-! check_bash_version && return 1
+[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] & 
+    display_error "Script requires bash 4.4+" && return 1
+[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
 #============================
 #   Global Variables    
 #============================

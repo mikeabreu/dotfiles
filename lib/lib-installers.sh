@@ -1,7 +1,7 @@
 #============================
 #   Dependency Check
 #============================
-REQUIRE_BASH_4_4=true
+REQUIRE_BASH_4_4=false
 [[ $_LOADED_LIB_INSTALLERS == true ]] && [[ $DEBUG == true ]] &&
     display_debug "Duplicate source attempt on lib-installers.sh. Skipping source attempt." &&
     return 0
@@ -25,7 +25,6 @@ if [[ $_LOADED_LIB_DOTFILES == false ]];then
         exit 1
     fi
 fi
-! check_bash_version && return 1
 #============================
 #   Global Variables    
 #============================
@@ -152,3 +151,10 @@ function install_docker {
         esac
     fi
 }
+
+[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] & 
+    display_error "Script requires bash 4.4+" && return 1
+[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
+#============================
+#   Bash 4.4+ Installers
+#============================
