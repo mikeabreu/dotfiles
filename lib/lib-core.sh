@@ -53,7 +53,7 @@ function check_privileges {
         ! sudo -S true < /dev/null 2> /dev/null &&
             display_warning "Testing user for 'sudo' rights. Exiting after 1 minute." &&
             command_exists timeout && 
-                (timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true) 
+                (timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true) \
             || 
                 (sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true)
     if [[ $DEBUG == true ]]; then
