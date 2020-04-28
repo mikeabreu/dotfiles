@@ -29,7 +29,6 @@ declare OPERATING_SYSTEM=${OPERATING_SYSTEM:-"Unknown"}
 declare OPERATING_SYSTEM_VERSION=${OPERATING_SYSTEM_VERSION:-"Unknown"}
 declare IS_PRIVILEGED=false
 declare IS_ROOT=false
-declare IS_MAC_USER=false
 declare HAS_SUDO=false
 declare CAN_SUDO=false
 #============================
@@ -109,7 +108,7 @@ function run_elevated_cmd {
         return "$?"
     fi
     if [[ $CAN_SUDO == true ]]; then
-        if [[ $IS_MAC_USER == true ]] && [[ $cmd == "brew" ]]; then
+        if [[ $OPERATING_SYSTEM == "Darwin" ]] && [[ $cmd == "brew" ]]; then
             display_warning "Running brew install as user:${CGREEN} $cmd ${args[@]} ${CE}"
             $cmd ${args[@]}
             return "$?"
