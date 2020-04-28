@@ -109,7 +109,7 @@ function run_elevated_cmd {
         return "$?"
     fi
     if [[ $CAN_SUDO == true ]]; then
-        if [[ ( $IS_MAC_USER == true ) && ( $cmd == "brew" ) ]]; then
+        if [[ $IS_MAC_USER == true ]] && [[ $cmd == "brew" ]]; then
             display_warning "Running brew install as user:${CGREEN} $cmd ${args[@]} ${CE}"
             $cmd ${args[@]}
             return "$?"
