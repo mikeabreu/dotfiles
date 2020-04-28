@@ -14,20 +14,21 @@
 #============================
 #   Assign these before sourcing this file to overwrite defaults
 declare _LIB_SETUP_ACTIONS=${_LIB_SETUP_ACTIONS:-true}
-declare -A _LIBCORE_LOAD_FUNCTIONS=(
-    [CORE]=${_LIBCORE_LOAD_FUNCTIONS[CORE]:-true}
-    [DISPLAY]=${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]:-true}
-    [SYSTEM]=${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]:-true}
-    [MISC]=${_LIBCORE_LOAD_FUNCTIONS[MISC]:-true}
-    [TRAP_HANDLERS]=${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]:-true}
-)
-declare -p _LIBCORE_LOAD_FUNCTIONS
 declare REQUIRE_BASH_4_4=${REQUIRE_BASH_4_4:-true}
 declare REQUIRE_PRIVILEGE=${REQUIRE_PRIVILEGE:-false}
 declare ENABLE_TRAP_HANDLERS=${ENABLE_TRAP_HANDLERS:-true}
 declare VERBOSE=${VERBOSE:-false}
 declare DEBUG=${DEBUG:-false}
 declare LIBCORE_LOGS=${LIBCORE_LOGS:-"${HOME}/.logs/"}
+# Failed to create load dependency variable on default macOS because bash 3.25 cannot do assoc array. ZSH 5.7 (default) can though.
+# declare -A _LIBCORE_LOAD_FUNCTIONS=(
+#     [CORE]=${_LIBCORE_LOAD_FUNCTIONS[CORE]:-true}
+#     [DISPLAY]=${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]:-true}
+#     [SYSTEM]=${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]:-true}
+#     [MISC]=${_LIBCORE_LOAD_FUNCTIONS[MISC]:-true}
+#     [TRAP_HANDLERS]=${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]:-true}
+# )
+# declare -p _LIBCORE_LOAD_FUNCTIONS
 #============================
 #   Public Global Variables
 #============================
@@ -50,10 +51,10 @@ declare _LOADED_LIB_CORE=true
 #============================
 #   Core Functions
 #============================
-[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function command_exists {
-    which "$1" >/dev/null 2>/dev/null || command -v "$1" >/dev/null 2>/dev/null
+function command_exists {
+    which "$1" &>/dev/null || command -v "$1" &>/dev/null
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function check_privileges {
+function check_privileges {
     [[ $REQUIRE_PRIVILEGE == false ]] && return 0
     [[ $EUID -eq 0 ]] && IS_ROOT=true && IS_PRIVILEGED=true
     command_exists sudo && HAS_SUDO=true && CAN_SUDO=false
@@ -73,7 +74,7 @@ declare _LOADED_LIB_CORE=true
         "Privileges are required to run this script. Exiting." && exit 1
     return 1
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function check_operating_system {
+function check_operating_system {
     # Try to determine from '/etc/centos-release'
     [[ -f /etc/centos-release ]] && 
         OPERATING_SYSTEM=$(cat /etc/centos-release | awk '{print $1}') &&
@@ -96,7 +97,7 @@ declare _LOADED_LIB_CORE=true
         display_debug "Unknown Operating System Version. Warn."
     return 0
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function run_elevated_cmd {
+function run_elevated_cmd {
     # Handle arguments being passed in
     raw_arguments=("$@")
     args=()
@@ -126,7 +127,7 @@ declare _LOADED_LIB_CORE=true
     $cmd ${args[@]}
     return "$?"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function safe_copy {
+function safe_copy {
     local src_file="$1"
     local dst_file="${2:-"./"}"
     # grab last char to check if its '/'
@@ -161,7 +162,7 @@ declare _LOADED_LIB_CORE=true
     [[ $DEBUG == false ]] && cp "$src_file" "$dst_file" 2>/dev/null
     return "$?"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[CORE]} == true ]] && function backup_file {
+function backup_file {
     ratelimit 1
     local src_file="$1"
     local dst_file="$src_file.$(date +%s).backup"
@@ -179,7 +180,7 @@ declare _LOADED_LIB_CORE=true
 #============================
 #   System Package Management 
 #============================
-[[ ${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]} == true ]] && function update_system_package {
+function update_system_package {
     [[ -z "$OPERATING_SYSTEM" ]] && display_error "Unknown OS" && exit 1
     case $OPERATING_SYSTEM in
         Ubuntu | Debian) run_elevated_cmd apt update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
@@ -188,7 +189,7 @@ declare _LOADED_LIB_CORE=true
         *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
     esac
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]} == true ]] && function install_system_package {
+function install_system_package {
     display_bar
     # Assign local variables
     local package_name="$1"
@@ -238,50 +239,50 @@ declare _LOADED_LIB_CORE=true
 #============================
 #   Display Functions     
 #============================
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function _display_message {
+function _display_message {
     echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}"
     # [[ log true ]] log action
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function newline {
+function newline {
     echo "" && return 0
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_message {
+function display_message {
     _display_message $CWHITE "      $@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_header {
+function display_header {
     _display_message $CPURPLE '[~]' "$@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_info {
+function display_info {
     _display_message $CBLUE '[*]' "$@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_success {
+function display_success {
     _display_message $CGREEN '[+]' "$@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_warning {
+function display_warning {
     _display_message $CYELLOW '[!]' "$@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_error {
+function display_error {
     _display_message $CRED '[-]' "$@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_debug {
+function display_debug {
     [[ -z "$@" ]] && echo -ne "$CPINK [~] DEBUG OUTPUT:${CE} " && return 0
     [[ ! -z "$@" ]] && _display_message $CPINK '[~] DEBUG:' "$@"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_prompt {
+function display_prompt {
     echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_bar {
+function display_bar {
     CCOLOR=${1:-$CWHITE}
     echo -e "${1}===============================================================================${CE}"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function display_array {
+function display_array {
     local _raw_array=($1)
     display_info "Displaying Array:"
     for element in ${_raw_array[@]}; do
         display_message "\tElement: ${element}"
     done 
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]} == true ]] && function prompt_user {
+function prompt_user {
     ! check_bash_version && return 1
     # handle associative arguments
     local -A _args
@@ -331,7 +332,7 @@ declare _LOADED_LIB_CORE=true
 #============================
 #   Misc Functions  
 #============================
-[[ ${_LIBCORE_LOAD_FUNCTIONS[MISC]} == true ]] && function add_terminal_colors {
+function add_terminal_colors {
     # Reset Color
     CE="\033[0m"
     # Text: Common Color Names
@@ -358,7 +359,7 @@ declare _LOADED_LIB_CORE=true
     # Background: All Hex Values: CB0 - CB255
     for HEX in {0..255};do eval "CB${HEX}"="\\\033[48\;5\;${HEX}m";done
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[MISC]} == true ]] && function check_bash_version {
+function check_bash_version {
     [[ $DEBUG == true ]] && display_debug "Bash Version: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
     # If 4.X, check if it's 4.4 or higher, if 4.4+ then skip.
     [[ "${BASH_VERSINFO[0]}" -eq 4 ]] && [[ "${BASH_VERSINFO[1]}" -gt 3 ]] && return 0
@@ -367,7 +368,7 @@ declare _LOADED_LIB_CORE=true
     # Return false if lower version than 4.4
     return 1
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[MISC]} == true ]] && function ratelimit {
+function ratelimit {
     local ratelimit="${1:-"1"}"
     local current_runtime=$(date +%s)
     if [[ -s "${LIBCORE_LOGS}/runtime" ]];then
@@ -390,7 +391,7 @@ declare _LOADED_LIB_CORE=true
 #============================
 #   Trap Handlers
 #============================
-[[ ${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]} == true ]] && function sigint_handler {
+function sigint_handler {
     echo
     prompt_user message="Do you wish to continue with the program [y/N]: " \
         warning_message="Signal Interrupt was received, CTRL + C." \
@@ -399,7 +400,7 @@ declare _LOADED_LIB_CORE=true
           error_message="Invalid option. Exiting." \
          default_action="N"
 }
-[[ ${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]} == true ]] && function exit_handler {
+function exit_handler {
     local _result="$?"
     [[ $_result -eq 0 ]] && [[ $VERBOSE == true ]] && display_success "Program is exiting succesfully. Good bye."
     [[ $_result -ne 0 ]] && [[ $VERBOSE == true ]] && display_error "Program exited with an error. Good bye."

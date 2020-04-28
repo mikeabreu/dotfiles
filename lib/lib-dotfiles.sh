@@ -16,36 +16,63 @@ if [[ $_LOADED_LIB_CORE == false ]];then
     fi
 fi
 #============================
-#   Configuration Structure
-#============================
-# _CONFIG_NAME | String of profile name
-#       -> Default: "default"
-# _CONFIG_SAFE_FILE | String of True/False for using Safe File Replacement
-#       -> Default: "True"
-# _CONFIG_SHELL | String of shell
-#       -> Default: "zsh"
-# _CONFIG_SHELL_FRAMEWORK | String of shell framework
-#       -> Default: "oh-my-zsh"
-# _CONFIG_SHELL_THEME | String of oh-my-zsh theme
-#       -> Default: "spaceship-prompt"
-# _CONFIG_SHELL_PLUGINS | Array of plugins to add to zshrc
-#       -> Default: ( "git" "tmux" )
-# _CONFIG_SHELL_PLUGINS_NONINSTALL | Array of plugins that dont require installation
-#       -> Default: ( "git" "tmux" )
-# _CONFIG_SHELL_PLUGINS_INSTALL | Array of plugins to install
-#       -> Default: ( "zsh-autosuggestions" "zsh-syntax-highlighting" )
-# _CONFIG_PACKAGES | Array of packages to install
-#       -> Default: ( "vim" "git" "curl" "wget" "grc" "htop" )
-
-#============================
 #   Global Variables    
 #============================
-declare -A _G_CONFIG
-_G_PACKAGE_ERROR_LIST=()
+DOTFILES="${HOME}/dotfiles"
+DOTFILES_HOME="${DOTFILES}/_home"
+DOTFILES_ETC="${DOTFILES}/_etc"
+DOTFILES_BIN="${DOTFILES}/_bin"
+DOTFILES_LOGS="${DOTFILES}/_logs" && LIBCORE_LOGS="$DOTFILES_LOGS"
+DOTFILES_CONFIGS="${DOTFILES}/configs"
+DOTFILES_CONFIGS_HOME="${DOTFILES_CONFIGS}/home"
+DOTFILES_CONFIGS_ETC="${DOTFILES_CONFIGS}/etc"
+DOTFILES_TOOLS="${DOTFILES}/tools"
 #============================
 #   Private Global Variables
 #============================
 _LOADED_LIB_DOTFILES=true
+#============================
+#   Configuration Structure
+#============================
+[[ -z "$DOTFILES_PROFILE" ]] && declare -A DOTFILES_PROFILE=(
+    [NAME]="default"
+    [SHELL]="zsh"
+    [SHELL_FRAMEWORK]="oh-my-zsh"
+    [SHELL_THEME]="spaceship-prompt"
+    [SHELL_PLUGINS]=$(_arr=(
+        "git" 
+        "tmux"
+        "zsh-syntax-highlighting" 
+        "zsh-autosuggestions"
+    ) && echo "${_arr[@]}")
+    [SHELL_PLUGINS_INSTALL]=$(_arr=(
+        "zsh-syntax-highlighting "
+        "zsh-autosuggestions"
+    ) && echo "${_arr[@]}")
+    [SHELL_PLUGINS_NOINSTALL]=$(_arr=(
+        "git"
+        "tmux"
+    ) && echo "${_arr[@]}")
+    [SYSTEM_PACKAGES]=$(_arr=(
+        "git"
+        "tmux"
+        "vim"
+    ) && echo "${_arr[@]}")
+    [CONFIGS_HOME]=$(_arr=(
+        "${DOTFILES_CONFIGS_HOME}/zsh/.zshrc_default"
+        "${DOTFILES_CONFIGS_HOME}/iterm2/main.json"
+        "${DOTFILES_CONFIGS_HOME}/ssh/ssh_config"
+        "${DOTFILES_CONFIGS_HOME}/vim/.vimrc_default"
+        "${DOTFILES_CONFIGS_HOME}/vscode/settings.json"
+    ) && echo "${_arr[@]}")
+    [CONFIGS_ETC]=$(_arr=(
+        "${DOTFILES_CONFIGS_ETC}/ssh/sshd_config"
+    ) && echo "${_arr[@]}")
+    [CONFIGS_ETC_SYMLINK]=true
+    [TOOLS]=$(_arr=(
+        "${DOTFILES_TOOLS}/tmp.sh"
+    ) && echo "${_arr[@]}")
+)
 #============================
 #   Functions
 #============================

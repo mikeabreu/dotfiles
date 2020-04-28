@@ -71,7 +71,7 @@ function handle_arguments {
     done
 }
 #============================
-#   Main Function Execution
+#   Main Function
 #============================
 function main {
     # Handle Arguments
@@ -108,7 +108,7 @@ function main {
     display_bar
     if [[ $CREATE_TMUX_SESSION == true ]];then
         # Load tmux
-        ! tmux list-sessions >/dev/null 2>/dev/null | grep "dotfiles" >/dev/null 2>/dev/null && 
+        ! tmux list-sessions &>/dev/null | grep "dotfiles" &>/dev/null && 
             display_header "Tmux: Starting new-session 'dotfiles'" &&
             tmux new-session -d -s dotfiles
         prompt_user message="About to connect to tmux, are you ready? [Y/n]: " \
@@ -116,7 +116,7 @@ function main {
             success_message="" error_message="" warning_message=""
         display_header "Tmux: Attaching to session 'dotfiles'"
         tmux send-keys "./dotfiles.sh -td" Enter
-        tmux attach-session -t dotfiles >/dev/null 2>/dev/null
+        tmux attach-session -t dotfiles &>/dev/null
         display_warning "Tmux: Continuing execution in tmux session. Exiting."
         exit 0
     fi
