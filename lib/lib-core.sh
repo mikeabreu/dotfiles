@@ -396,7 +396,7 @@ function exit_handler {
 add_terminal_colors
 if [[ $_LIB_SETUP_ACTIONS == true ]];then
     [[ $DEBUG == true ]] && display_debug "Loaded lib-core.sh file"
-    [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] & 
+    [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] && 
         display_debug "lib-core requires bash 4.4+" && return 1
     [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
     [[ $ENABLE_TRAP_HANDLERS == true ]] && trap sigint_handler SIGINT
