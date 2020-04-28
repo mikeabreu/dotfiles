@@ -20,15 +20,6 @@ declare ENABLE_TRAP_HANDLERS=${ENABLE_TRAP_HANDLERS:-true}
 declare VERBOSE=${VERBOSE:-false}
 declare DEBUG=${DEBUG:-false}
 declare LIBCORE_LOGS=${LIBCORE_LOGS:-"${HOME}/.logs/"}
-# Failed to create load dependency variable on default macOS because bash 3.25 cannot do assoc array. ZSH 5.7 (default) can though.
-# declare -A _LIBCORE_LOAD_FUNCTIONS=(
-#     [CORE]=${_LIBCORE_LOAD_FUNCTIONS[CORE]:-true}
-#     [DISPLAY]=${_LIBCORE_LOAD_FUNCTIONS[DISPLAY]:-true}
-#     [SYSTEM]=${_LIBCORE_LOAD_FUNCTIONS[SYSTEM]:-true}
-#     [MISC]=${_LIBCORE_LOAD_FUNCTIONS[MISC]:-true}
-#     [TRAP_HANDLERS]=${_LIBCORE_LOAD_FUNCTIONS[TRAP_HANDLERS]:-true}
-# )
-# declare -p _LIBCORE_LOAD_FUNCTIONS
 #============================
 #   Public Global Variables
 #============================
@@ -299,17 +290,6 @@ function prompt_user {
     local _failure_message="${_args[failure_message]:-""}"
     local _exit_on_failure="${_args[exit_on_failure]:-true}"
     local _error_message="${_args[error_message]:-""}"
-    # debug messaging
-    # if [[ $DEBUG == true ]];then
-    #     display_debug "Prompt User Variables:"
-    #     display_debug "Message: $_message"
-    #     display_debug "Default Action: $_default_action"
-    #     display_debug "Warning Message: $_warning_message"
-    #     display_debug "Success Message: $_success_message"
-    #     display_debug "Failure Message: $_failure_message"
-    #     display_debug "Exit on Failure: $_exit_on_failure"
-    #     display_debug "Error Message: $_error_message"
-    # fi
     # Prompt user for program execution.
     [[ ! -z "$_warning_message" ]] && display_warning "$_warning_message"
     display_prompt "$_message"
