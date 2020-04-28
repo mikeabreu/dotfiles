@@ -56,6 +56,7 @@ function check_privileges {
                 (timeout --foreground 1m sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true) \
             || 
                 (sudo -v 2>/dev/null && CAN_SUDO=true && IS_PRIVILEGED=true)
+    fi
     if [[ $DEBUG == true ]]; then
         display_debug "Found the following privileges for current user:"
         display_debug "\tIS_PRIVILEGED: ${IS_PRIVILEGED}"
