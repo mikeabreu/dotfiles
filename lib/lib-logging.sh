@@ -17,7 +17,7 @@ if [[ $_LOADED_LIB_CORE == false ]];then
     fi
 fi
 [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] & 
-    display_error "Script requires bash 4.4+" && return 1
+    display_debug "lib-logging requires bash 4.4+" && return 1
 [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
 
 

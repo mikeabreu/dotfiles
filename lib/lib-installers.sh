@@ -153,7 +153,7 @@ function install_docker {
 }
 
 [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] & 
-    display_error "Script requires bash 4.4+" && return 1
+    display_debug "lib-installers has functions that require bash 4.4+ and were not loaded" && return 1
 [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
 #============================
 #   Bash 4.4+ Installers
