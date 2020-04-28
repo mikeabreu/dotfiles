@@ -23,12 +23,9 @@ LIBCORE_LOGS="$DOTFILES_LOGS"
 #============================
 #   Imports
 #============================
-if [[ -r "lib/lib-core.sh" ]]; then source "lib/lib-core.sh"; else 
-    echo "Missing lib-core.sh"; exit 1; fi
-if [[ -r "lib/lib-dotfiles.sh" ]]; then source "lib/lib-dotfiles.sh"; else 
-    echo "Missing lib-dotfiles.sh"; exit 1; fi
-if [[ -r "lib/lib-installers.sh" ]]; then source "lib/lib-installers.sh"; else 
-    echo "Missing lib-installers.sh"; exit 1; fi
+[[ -r "lib/lib-core.sh" ]] && source "lib/lib-core.sh" || (echo "Missing lib-core.sh"; exit 1)
+[[ -r "lib/lib-dotfiles.sh" ]] && source "lib/lib-dotfiles.sh" || (echo "Missing lib-dotfiles.sh" && exit 1)
+[[ -r "lib/lib-installers.sh" ]] && source "lib/lib-installers.sh" || (echo "Missing lib-installers.sh" && exit 1)
 #============================
 #   Help Message
 #============================

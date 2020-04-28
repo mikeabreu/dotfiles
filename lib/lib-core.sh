@@ -62,7 +62,7 @@ function check_privileges {
     sudo -S true < /dev/null 2> /dev/null && local IS_PRIVILEGED=true
     [[ $IS_PRIVILEGED == true ]] && return 0
     [[ $REQUIRE_PRIVILEGE == true ]] && [[ $IS_PRIVILEGED == false ]] &&
-        "Privileges are required to run this script. Exiting." && exit 1
+        display_error "Privileges are required to run this script. Exiting." && exit 1
     return 1
 }
 function check_operating_system {
