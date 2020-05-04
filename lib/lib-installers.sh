@@ -62,7 +62,7 @@ function install_shell {
     local _shell="$1"
     [[ $OPERATING_SYSTEM == "Darwin" ]] && {
         local user_shell="$( dscl . -read /Users/testuser UserShell | awk -F':' '{print $2}' \
-            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//') | grep -o "$(which $_shell)""
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -o "$(which $_shell)" )"
     } || {
         local user_shell="$( grep "$(whoami)" /etc/passwd | grep -o "$(which $_shell)" )"
     }
