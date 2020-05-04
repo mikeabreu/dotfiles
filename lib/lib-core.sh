@@ -114,17 +114,10 @@ function run_elevated_cmd {
     # Handle arguments being passed in
     raw_arguments=("$@")
     args=()
-    [[ $SHELL == *"zsh"* ]] && {
-        for index in "${\!raw_arguments[@]}";do
-            [[ $index -eq 0 ]] && cmd=${raw_arguments[$index]}
-            [[ $index -ne 0 ]] && args+=( ${raw_arguments[$index]} )
-        done
-    } || {
-        for index in "${!raw_arguments[@]}";do
-            [[ $index -eq 0 ]] && cmd=${raw_arguments[$index]}
-            [[ $index -ne 0 ]] && args+=( ${raw_arguments[$index]} )
-        done
-    }
+    for index in "${!raw_arguments[@]}";do
+        [[ $index -eq 0 ]] && cmd=${raw_arguments[$index]}
+        [[ $index -ne 0 ]] && args+=( ${raw_arguments[$index]} )
+    done
     # Determine privileges and run command appropriately
     [[ $IS_PRIVILEGED != true ]] && return 1
     if [[ $IS_ROOT == true ]]; then
