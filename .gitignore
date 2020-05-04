@@ -1,3 +1,4 @@
+.DS_Store
 ._*
 _*
 _bin
@@ -5,4 +6,3 @@ _logs
 _home
 _etc
 .vscode
-.DS_Store
