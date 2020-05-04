@@ -60,7 +60,7 @@ function handle_arguments {
     # Arg: -d | Debug messaging
     # Arg: -v | Enable Verbose
     # Arg: -m | Skip relaunching bash on macOS
-    while getopts ":p:htsdv" opt;do
+    while getopts ":p:htsdvm" opt;do
         case $opt in
             p)  PROFILE_FILENAME="$OPTARG" ;;
             h)  help_message && display_bar && exit 1 ;;
