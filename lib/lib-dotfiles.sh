@@ -45,6 +45,7 @@ declare -A PROFILE_SCHEMA=(
     [CONFIGS_ETC]="array"
     [CONFIGS_ETC_SYMLINK]="boolean"
     [TOOLS]="array"
+    [CUSTOM_INSTALLERS]="array"
 )
 declare DOTFILES="${HOME}/dotfiles"
 declare -A DOTFILES_DIRS=(
@@ -118,6 +119,10 @@ function install_profile {
         # System Packages
         install_system_packages "${DOTFILES_PROFILE[SYSTEM_PACKAGES]}"
         display_bar
+    }
+    [[ -n "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" ]] && {
+        # Custom Installers
+        install_custom_installers "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" "${DOTFILES}"
     }
     #############
     ### Setup ###
@@ -224,6 +229,13 @@ function display_profile {
         display_message "${CGREEN}TOOLS:${CE}"
         for tool in ${DOTFILES_PROFILE[TOOLS]}; do
             display_message "\t${CGREEN}- TOOL:${CE} ${CWHITE} ${tool}"
+        done
+    }
+    # Custom Installers
+    [[ -n "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" ]] && {
+        display_message "${CGREEN}TOOLS:${CE}"
+        for installer in ${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}; do
+            display_message "\t${CGREEN}- Installer:${CE} ${CWHITE} ${installer}"
         done
     }
     display_bar
@@ -346,6 +358,7 @@ function setup_configs {
             # file has a path
             local target_path="${target_dir}/${configs[$_filename]}/$_filename"
             [[ ! -e "${target_dir}/${configs[$_filename]}" ]] && {
+                # Create the file path in _home for files to be copied to
                 mkdir -p "${target_dir}/${configs[$_filename]}"
             }
             [[ $VERBOSE == true ]] && display_info "Filename: $_filename"

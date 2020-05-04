@@ -87,7 +87,7 @@ function install_shell_framework {
     display_bar
     display_title "Installing Shell Framework"
     case "$shell_framework" in
-        # ADD CUSTOM INSTALLERS HERE
+        # ADD CUSTOM SHELL FRAMEWORK INSTALLER HERE
         oh-my-zsh) install_oh_my_zsh "$dotfiles_home" ;;
         # Catch All
         *)  display_error "LIB-INSTALLERS: No installer found for shell framework. Exiting.";;
@@ -99,7 +99,7 @@ function install_shell_theme {
     display_bar
     display_title "Installing Shell Theme"
     case "$shell_theme" in
-        # ADD CUSTOM INSTALLERS HERE
+        # ADD CUSTOM SHELL THEME INSTALLER HERE
         spaceship-prompt) install_spaceship_theme "${dotfiles_home}/.oh-my-zsh" ;;
         # Catch All
         *)  display_error "LIB-INSTALLERS: No installer found for shell theme: $shell_theme";;
@@ -113,7 +113,7 @@ function install_shell_plugins {
     display_title "Installing Shell Plugins"
     for plugin in "${plugins[@]}"; do
         case "$plugin" in
-            # ADD CUSTOM INSTALLERS HERE
+            # ADD CUSTOM SHELL PLUGIN INSTALLER HERE
             zsh-syntax-highlighting)
                 [[ -e "${ohmyzsh_plugins_dir}/zsh-syntax-highlighting" ]] && {
                     display_warning "Skipping: Shell Plugin: $plugin (Already Installed)"
@@ -130,6 +130,20 @@ function install_shell_plugins {
                 } ;;
             # Catch All
             *)  display_warning "LIB-INSTALLERS: No installer found for shell plugin: $plugin";;
+        esac
+    done
+}
+function install_custom_installers {
+    local installers=($(echo "$1"))
+    local dotfiles_root_dir="$2"
+    display_bar
+    display_title "Installing Custom Installers"
+    for installer in "${installers[@]}"; do
+        case "$installer" in
+            # ADD CUSTOM INSTALLERS HERE
+            iterm2)     install_iterm2 ;;
+            # Catch All
+            *)  display_warning "LIB-INSTALLERS: No installer found for custom install: $installer";;
         esac
     done
 }
@@ -230,11 +244,13 @@ function install_iterm2 {
         display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
         return 0
     }
-    local download_link="$( curl https://www.iterm2.com/downloads.html 2>/dev/null \
-        | grep -oE '<a\s+(?:[^>]*?\s+)?href=(["])(.*?)\1' | grep "stable" | head -n1 | awk -F'"' '{print $2}')"
+    local download_link="$( curl https://www.iterm2.com/downloads.html 2>/dev/null  |
+        grep -oE '<a\s+(?:[^>]*?\s+)?href=(["])(.*?)\1'                             | 
+        grep "stable" | head -n1 | awk -F'"' '{print $2}')"
     local filename="$(echo "$download_link" | awk -F'/' '{print $NF}')"
-    display_info "Download link  is: $download_link"
+    display_info "Download link is: $download_link"
     prompt_user message="Do you wish to download this package and install it? [Y/n]: " \
+        warning_message="The download link was gathered by a html scrapper, verify it's the latest." \
         failure_message="You chose not to install iterm2 with the download link: $download_link" \
         success_message="" error_message="" warning_message=""
     display_info "Downloading file from: $download_link"

@@ -135,7 +135,7 @@ function main {
     # Install and configure the profile to the system
     install_profile "$PROFILE_FILENAME"
     
-    display_info "Finished setting up shell. Starting new shell. Restart terminal to start fresh.ex"
+    display_info "Finished setting up shell. Starting new shell. Restart terminal to start fresh."
     $(which ${DOTFILES_PROFILE[SHELL]})
 }
 #============================
