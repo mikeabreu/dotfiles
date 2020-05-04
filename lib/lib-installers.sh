@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "LIB-INSTALLERS: Shell: $SHELL"
 # Author: Michael Abreu
 #============================
 #   Dependency Check

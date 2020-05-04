@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "LIB-DOTFILES: Shell: $SHELL"
 # Author: Michael Abreu
 #============================
 #   Dependency Check
