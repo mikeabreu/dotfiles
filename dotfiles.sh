@@ -109,9 +109,6 @@ function main {
         install_system_package "tmux"
         install_system_package "git"
     fi
-    [[ -r "lib/lib-dotfiles.sh" ]] && { source "lib/lib-dotfiles.sh" || { 
-            echo "DOTFILES: Failed to load lib-dotfiles.sh, run with debug true for details"; exit 1; }
-    } || {  echo "DOTFILES: Missing lib-dotfiles.sh, run with debug true for details"; exit 1; }
     display_bar
     if [[ $CREATE_TMUX_SESSION == true ]];then
         # Load tmux
@@ -128,6 +125,9 @@ function main {
         display_warning "Tmux: Continuing execution in tmux session. Exiting."
         exit 0
     fi
+    [[ -r "lib/lib-dotfiles.sh" ]] && { source "lib/lib-dotfiles.sh" || { 
+            echo "DOTFILES: Failed to load lib-dotfiles.sh, run with debug true for details"; exit 1; }
+    } || {  echo "DOTFILES: Missing lib-dotfiles.sh, run with debug true for details"; exit 1; }
     # Check if privileged. Needed because of potential skips for dependency and tmux
     ! $IS_PRIVILEGED && display_info "Determining user privileges and sudo access." && check_privileges
     # Load the profile and display to user before continuing
