@@ -1,29 +1,18 @@
+#!/usr/bin/env bash
+# Author: Michael Abreu
 #============================
 #   Dependency Check
 #============================
-[[ $_LOADED_LIB_INSTALLERS == true ]] && [[ $DEBUG == true ]] &&
-    display_debug "Duplicate source attempt on lib-installers.sh. Skipping source attempt." &&
+[[ $_LOADED_LIB_INSTALLERS == true ]] && {
+    [[ $DEBUG == true ]] && display_debug "Skipping: Duplicate source attempt on lib-installers.sh."
     return 0
-if [[ $_LOADED_LIB_CORE == false ]];then
-    if [[ -e lib-core.sh ]];then
-        source lib-core.sh
-    elif [[ -e "${HOME}/dotfiles/lib/lib-core.sh" ]];then
-        source "${HOME}/dotfiles/lib/lib-core.sh"
-    else
-        echo "Missing lib-core.sh. Exiting."
-        exit 1
-    fi
-fi
-if [[ $_LOADED_LIB_DOTFILES == false ]];then
-    if [[ -e lib-dotfiles.sh ]];then
-        source lib-dotfiles.sh
-    elif [[ -e "${HOME}/dotfiles/lib/lib-dotfiles.sh" ]];then
-        source "${HOME}/dotfiles/lib/lib-dotfiles.sh"
-    else
-        echo "Missing lib-dotfiles.sh. Exiting."
-        exit 1
-    fi
-fi
+}
+[[ -r "lib/lib-core.sh" ]] && { source "lib/lib-core.sh" || { 
+        echo "LIB-INSTALLERS: Failed to load lib-core.sh, run with debug true for details"; exit 1; }
+} || {  echo "LIB-INSTALLERS: Missing lib-core.sh, run with debug true for details"; exit 1; }
+# [[ -r "lib/lib-dotfiles.sh" ]] && { source "lib/lib-dotfiles.sh" || { 
+#         echo "LIB-INSTALLERS: Failed to load lib-dotfiles.sh, run with debug true for details"; exit 1; }
+# } || {  echo "LIB-INSTALLERS: Missing lib-dotfiles.sh, run with debug true for details"; exit 1; }
 #============================
 #   Global Variables    
 #============================
@@ -36,7 +25,10 @@ _LOADED_LIB_INSTALLERS=true
 #   macOS Brew Installers
 #============================
 function install_brew {
-    command_exists brew && display_success "Package 'brew' is already installed. Skipping." && return 0
+    command_exists brew && {
+        display_warning "Skipping: System Package: brew (Already Installed)"
+        return 0
+    }
     display_info "Installing package manager 'brew' on the system."
     # /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" &&
@@ -44,69 +36,145 @@ function install_brew {
     return $?
 }
 function install_brew_bash {
-    check_bash_version && display_success "Package 'bash' is already 4.4 of higher. Skipping." && return 0
+    check_bash_version && display_success "Skipping: System Package bash (Already Installed and 4.4+)" && return 0
     display_info "Installing package 'bash' with brew."
     brew install bash
     return $?
 }
 function install_brew_coreutils {
-    command_exists timeout && 
-        display_success "Package 'coreutils' is already installed. Skipping." && 
+    command_exists timeout && {
+        display_success "Skipping: System Package: coreutils (Already Installed)"
         return 0
-    [[ $OPERATING_SYSTEM != "Darwin" ]] && 
-        display_error "Unable to install package 'timeout'. Skipping." &&
+    }
+    [[ $OPERATING_SYSTEM != "Darwin" ]] && {
+        display_error "Skipping: Unable to install package 'timeout'."
         return 1
+    }
     # 'coreutils' is required for the use of 'timeout' in check_privileges. Mac OS Only
     display_info "Installing package 'coreutils' with brew."
     brew install coreutils && check_privileges
     return $?
 }
 #============================
+#   Dotfile Installers       
+#============================
+function install_shell {
+    local _shell="$1"
+    local user_shell="$(grep "$(whoami)" /etc/passwd | grep -o "$(which $_shell)")"
+    display_bar
+    display_title "Installing and changing user shell."
+    [[ $DEBUG == true ]] && display_debug "User shell: '$user_shell' and desired_shell: '$_shell'"
+    [[ -z "$user_shell" ]] && {
+        ! command_exists "$_shell" && { install_system_package "$_shell"; }
+        local new_shell="$(which $_shell)"
+        [[ "$user_shell" == "$new_shell" ]] && {
+            display_warning "Skipping: User shell is: $user_shell and desired shell is: $new_shell"
+        } || {
+            display_info "Changing user shell to: $new_shell"
+            chsh -s "$new_shell"
+        }
+    } || { display_warning "Skipping: User shell is already set to desired shell: $user_shell"; }
+
+}
+function install_shell_framework {
+    local shell_framework="$1"
+    local dotfiles_home="$2"
+    display_bar
+    display_title "Installing Shell Framework"
+    case "$shell_framework" in
+        # ADD CUSTOM INSTALLERS HERE
+        oh-my-zsh) install_oh_my_zsh "$dotfiles_home" ;;
+        # Catch All
+        *)  display_error "LIB-INSTALLERS: No installer found for shell framework. Exiting.";;
+    esac
+}
+function install_shell_theme {
+    local shell_theme="$1"
+    local dotfiles_home="$2"
+    display_bar
+    display_title "Installing Shell Theme"
+    case "$shell_theme" in
+        # ADD CUSTOM INSTALLERS HERE
+        spaceship-prompt) install_spaceship_theme "${dotfiles_home}/.oh-my-zsh" ;;
+        # Catch All
+        *)  display_error "LIB-INSTALLERS: No installer found for shell theme: $shell_theme";;
+    esac
+}
+function install_shell_plugins {
+    local plugins=($(echo "$1"))
+    local dotfiles_home="$2"
+    local ohmyzsh_plugins_dir="${dotfiles_home}/.oh-my-zsh/plugins"
+    display_bar
+    display_title "Installing Shell Plugins"
+    for plugin in "${plugins[@]}"; do
+        case "$plugin" in
+            # ADD CUSTOM INSTALLERS HERE
+            zsh-syntax-highlighting)
+                [[ -e "${ohmyzsh_plugins_dir}/zsh-syntax-highlighting" ]] && {
+                    display_warning "Skipping: Shell Plugin: $plugin (Already Installed)"
+                } || {
+                    display_info "Installing shell plugin: zsh-syntax-highlighting"
+                    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "${ohmyzsh_plugins_dir}/zsh-syntax-highlighting"
+                } ;;
+            zsh-autosuggestions)
+                [[ -e "${ohmyzsh_plugins_dir}/zsh-autosuggestions" ]] && {
+                    display_warning "Skipping: Shell Plugin: $plugin (Already Installed)"
+                } || {
+                    display_info "Installing shell plugin: zsh-autosuggestions"
+                    git clone https://github.com/zsh-users/zsh-autosuggestions.git "${ohmyzsh_plugins_dir}/zsh-autosuggestions"
+                } ;;
+            # Catch All
+            *)  display_warning "LIB-INSTALLERS: No installer found for shell plugin: $plugin";;
+        esac
+    done
+}
+function install_system_packages {
+    local packages=($(echo "$1"))
+    display_bar
+    display_title "Installing System Packages"
+    for package in "${packages[@]}"; do
+        install_system_package $package
+    done
+}
+#============================
 #   Generic Installers       
 #============================
 function install_oh_my_zsh {
-    if [[ -e "${DOTFILES_HOME}/.oh-my-zsh/oh-my-zsh.sh" ]]; then
-        display_warning "Skipping Installation Oh-My-ZSH (Already Installed)"
-        return
-    fi
+    local dotfiles_home="$1"
+    local ohmyzsh_basedir="${dotfiles_home}/.oh-my-zsh"
+    [[ -e "${ohmyzsh_basedir}/oh-my-zsh.sh" ]] && {
+        display_warning "Skipping: Shell Framework: Oh-My-ZSH (Already Installed)"
+        return 0
+    }
     # Prevent the cloned repository from having insecure permissions. Failing to do
     # so causes compinit() calls to fail with "command not found: compdef" errors
     # for users with insecure umasks (e.g., "002", allowing group writability). Note
     # that this will be ignored under Cygwin by default, as Windows ACLs take
     # precedence over umasks except for filesystems mounted with option "noacl".
+    local last_umask="$(umask)"
     umask g-w,o-w
-
-    display_info "${CBLUE}Cloning Oh My Zsh...${CE}"
-
-    command_exists git || {
-        error "git is not installed"
-        exit 1
-    }
-
-    if [ "$OPERATING_SYSTEM" = cygwin ] && git --version | grep -q msysgit; then
-        error "Windows/MSYS Git is not supported on Cygwin"
-        error "Make sure the Cygwin git package is installed and is first on the \$PATH"
-        exit 1
-    fi
-
+    display_info "Cloning Oh My Zsh into 'dotfiles/_home/.oh-my-zsh'"
     git clone -c core.eol=lf -c core.autocrlf=false \
         -c fsck.zeroPaddedFilemode=ignore \
         -c fetch.fsck.zeroPaddedFilemode=ignore \
         -c receive.fsck.zeroPaddedFilemode=ignore \
-        --depth=1 --branch "master" "https://github.com/ohmyzsh/ohmyzsh" "${DOTFILES_HOME}/.oh-my-zsh" || {
-        error "git clone of oh-my-zsh repo failed"
-        exit 1
-    }
+        --depth=1 --branch "master" "https://github.com/ohmyzsh/ohmyzsh" "${ohmyzsh_basedir}" || {
+            error "git clone of oh-my-zsh repo failed"
+            exit 1
+        }
+    # Restoring umask
+    umask "$last_umask"
 }
 function install_spaceship_theme {
-    # TODO: update this function
-    if [[ -e "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt" ]]; then
-        display_warning "Skipping Installation: Spaceship (Already Installed)"
-    else
-        display_success "[+] Installing ZSH Theme:${CWHITE} Spaceship Prompt"
-        copy_recursive "${CWD}/spaceship-prompt" "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt"
-        ln -s "${HOME}/.oh-my-zsh/custom/themes/spaceship-prompt/spaceship.zsh-theme" "${HOME}/.oh-my-zsh/themes/spaceship.zsh-theme"
-    fi
+    local ohmyzsh_dir="$1"
+    [[ -d "$ohmyzsh_dir" ]] && {
+        local custom_theme_dir="${ohmyzsh_dir}/custom/themes"
+        [[ ! -e "${custom_theme_dir}/spaceship-prompt" ]] && {
+            display_info "Installing Spaceship Prompt theme"
+            git clone https://github.com/denysdovhan/spaceship-prompt.git "${custom_theme_dir}/spaceship-prompt"
+            ln -s "${custom_theme_dir}/spaceship-prompt/spaceship.zsh-theme" "${custom_theme_dir}/spaceship.zsh-theme"
+        } || { display_warning "Skipping: Shell Theme: Spaceship (Already Installed)"; }
+    }
 }
 #============================
 #   Custom Installers       
@@ -145,16 +213,13 @@ function install_docker {
                 sudo usermod -aG docker $USER && display_success "Successfully added $USER to group 'docker'."
                 ;;
             *)
-                display_warning "Unsupported Operating System version. Skipping."
+                display_warning "Skipping: Unsupported Operating System version."
                 ;;
         esac
     fi
 }
-
-[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == true ]] && 
-    display_debug "lib-installers has functions that require bash 4.4+ and were not loaded" && return 1
-[[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && [[ $DEBUG == false ]] && return 1
 #============================
-#   Bash 4.4+ Installers
+#   Main Execution / Initialization
 #============================
+[[ $DEBUG == true ]] && display_debug "Loaded lib-installers.sh file"
 return 0

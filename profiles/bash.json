@@ -1,0 +1,13 @@
+{
+	"name": "bash",
+    "shell": "bash",
+	"system_packages": [
+        "vim",
+        "git",
+        "tmux",
+        "grc"
+    ],
+    "configs_home": [
+        "bash=.bashrc"
+    ]
+}

@@ -1,23 +1,39 @@
 # -----------------------------------------------
 # Set Variables
 # -----------------------------------------------
-
+set -o ignoreeof
 # -----------------------------------------------
 # Environment Variables
 # -----------------------------------------------
-export DOTFILES_HOME="${HOME}/dotfiles/home"
-export PATH="${PATH}:${HOME}/bin:${DOTFILES_HOME}/bin"
-export ZSH=${DOTFILES_HOME}/.oh-my-zsh
-export TERM='xterm-256color'
+export PATH="${PATH}:${HOME}/bin:/opt/X11/bin"
+export ZSH="${HOME}/.oh-my-zsh"
+export TERM="xterm-256color"
+export EXE4J_JAVA_HOME="/usr/local/opt/openjdk/bin/"
+export GOPATH="${HOME}/gocode"
 
 # -----------------------------------------------
 # Oh My ZSH Configuration
 # -----------------------------------------------
-ZSH_THEME='spaceship'
-ZSH_TMUX_AUTOSTART='false'
-ZSH_TMUX_AUTOSTART_ONCE='false'
-plugins=( %%PLUGIN_LIST%% )
-source $ZSH/oh-my-zsh.sh
+ZSH_THEME="spaceship"
+ZSH_TMUX_AUTOSTART="false"
+ZSH_TMUX_AUTOSTART_ONCE="false"
+declare plugins=(
+    git 
+    aws
+    docker 
+    docker-compose
+    docker-machine
+    terraform
+    tmux
+    vscode
+    python
+    virtualenv
+    nmap
+    osx
+    zsh-autosuggestions 
+    zsh-syntax-highlighting
+)
+[[ -r "${ZSH}/oh-my-zsh.sh" ]] && source $ZSH/oh-my-zsh.sh
 
 # -----------------------------------------------
 # Aliases
@@ -92,3 +108,6 @@ docker_clean() {
 # Sourcing
 # -----------------------------------------------
 [[ -s "${HOME}/grc/grc.zsh" ]] && source ${HOME}/grc/grc.zsh
+
+# opam configuration
+test -r /Users/mikeabreu/.opam/opam-init/init.zsh && . /Users/mikeabreu/.opam/opam-init/init.zsh &>/dev/null || true

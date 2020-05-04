@@ -1,39 +1,22 @@
 # -----------------------------------------------
 # Set Variables
 # -----------------------------------------------
-set -o ignoreeof
+
 # -----------------------------------------------
 # Environment Variables
 # -----------------------------------------------
-export PATH="${PATH}:${HOME}/bin:/opt/X11/bin"
 export ZSH=${HOME}/.oh-my-zsh
 export TERM='xterm-256color'
-export EXE4J_JAVA_HOME='/usr/local/opt/openjdk/bin/'
-export GOPATH='${HOME}/gocode'
+export PATH="${PATH}:${HOME}/bin:${HOME}/dotfiles/_bin:"
 
 # -----------------------------------------------
 # Oh My ZSH Configuration
 # -----------------------------------------------
-ZSH_THEME='spaceship'
-ZSH_TMUX_AUTOSTART='false'
-ZSH_TMUX_AUTOSTART_ONCE='false'
-plugins=(
-    git 
-    aws
-    docker 
-    docker-compose
-    docker-machine
-    terraform
-    tmux
-    vscode
-    python
-    virtualenv
-    nmap
-    osx
-    zsh-autosuggestions 
-    zsh-syntax-highlighting
-    )
-source $ZSH/oh-my-zsh.sh
+declare ZSH_THEME="spaceship"
+declare ZSH_TMUX_AUTOSTART="false"
+declare ZSH_TMUX_AUTOSTART_ONCE="false"
+declare -a plugins=( %%PLUGINS%% )
+[[ -r "${ZSH}/oh-my-zsh.sh" ]] && source "${ZSH}/oh-my-zsh.sh"
 
 # -----------------------------------------------
 # Aliases
@@ -51,7 +34,7 @@ alias mv="mv -vf"
 alias mkdir="/bin/mkdir -pv"
 alias sudo='sudo '
 
-alias ports="sudo lsof -PiTCP -sTCP:LISTEN +c0"
+alias ports="netstat -pantu"
 alias ipconfig="ifconfig $@"
 alias gipv4="grep -oE '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'"
 alias gipv4r="grep -oE '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/[0-9][0-9]?'"
@@ -101,6 +84,7 @@ checksums() { echo -n "md5: ";md5sum "${@}";echo -n "sha1: ";sha1sum "${@}";echo
 mount_vmshare() { vmhgfs-fuse .host:/ /mnt/host }
 docker_clean() {
     for exited_container in $(docker ps -a | grep "Exited" | awk '{print $1}'); do
+        echo -n "Removing docker container: "
         docker rm $exited_container
     done
 }
@@ -108,6 +92,3 @@ docker_clean() {
 # Sourcing
 # -----------------------------------------------
 [[ -s "${HOME}/grc/grc.zsh" ]] && source ${HOME}/grc/grc.zsh
-
-# opam configuration
-test -r /Users/mikeabreu/.opam/opam-init/init.zsh && . /Users/mikeabreu/.opam/opam-init/init.zsh > /dev/null 2> /dev/null || true

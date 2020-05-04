@@ -3,26 +3,24 @@
     "shell": "zsh",
     "shell_framework": "oh-my-zsh",
     "shell_theme": "spaceship-prompt",
-	"shell_plugins": [
-        {"name": "git"},
-        {"name": "tmux"},
-        {
-            "name": "zsh-autosuggestions",
-            "install": true,
-            "github_url": "https://github.com/zsh-users/zsh-autosuggestions.git"
-        },
-        {
-            "name": "zsh-syntax-highlighting",
-            "install": true,
-            "github_url": "https://github.com/zsh-users/zsh-syntax-highlighting.git"
-        }
-	],
-	"packages": [
-        {"name": "vim"},
-        {"name": "curl"},
-        {"name": "wget"},
-        {"name": "grc"},
-        {"name": "htop"}
+	"shell_plugins_no_installation": [
+        "git",
+        "tmux"
     ],
-    "custom_install": []
+    "shell_plugins_to_install": [
+        "zsh-autosuggestions",
+        "zsh-syntax-highlighting"
+    ],
+	"system_packages": [
+        "vim",
+        "git",
+        "tmux",
+        "grc"
+    ],
+    "configs_home": [
+        "default=.vimrc",
+        "default=.zshrc"
+    ],
+    "configs_etc": [],
+    "tools": []
 }

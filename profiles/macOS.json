@@ -1,38 +1,44 @@
 {
 	"name": "macOS",
-	"safe_file": true,
     "shell": "zsh",
     "shell_framework": "oh-my-zsh",
     "shell_theme": "spaceship-prompt",
-	"shell_plugins": [
-        {"name": "git"},
-        {"name": "aws"},
-        {"name": "docker"},
-        {"name": "docker-compose"},
-        {"name": "docker-machine"},
-        {"name": "terraform"},
-        {"name": "tmux"},
-        {"name": "vscode"},
-        {"name": "python"},
-        {"name": "virtualenv"},
-        {"name": "nmap"},
-        {"name": "osx"},
-        {
-            "name": "zsh-autosuggestions",
-            "install": true
-        },
-        {
-            "name": "zsh-syntax-highlighting",
-            "install": true
-        }
-	],
-	"packages": [
-        {"name": "vim"},
-        {"name": "git"},
-        {"name": "curl"},
-        {"name": "wget"},
-        {"name": "grc"},
-        {"name": "htop"}
+	"shell_plugins_no_installation": [
+        "git",
+        "aws",
+        "docker",
+        "docker-compose",
+        "docker-machine",
+        "terraform",
+        "tmux",
+        "vscode",
+        "python",
+        "virtualenv",
+        "nmap",
+        "osx"
     ],
-    "custom_install": []
+    "shell_plugins_to_install": [
+        "zsh-autosuggestions",
+        "zsh-syntax-highlighting"
+    ],
+	"system_packages": [
+        "vim",
+        "git",
+        "curl",
+        "wget",
+        "grc",
+        "htop"
+    ],
+    "configs_home": [
+        "zsh/.zshrc_default",
+        "iterm2/main.json",
+        "ssh/ssh_config",
+        "vim/.vimrc_default",
+        "vscode/settings.json"
+    ],
+    "configs_etc": [
+        "ssh/sshd_config"
+    ],
+    "configs_etc_symlink": true,
+    "tools": []
 }
