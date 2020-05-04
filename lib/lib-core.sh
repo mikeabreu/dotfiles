@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-echo "LIB-CORE: Shell: $SHELL"
 # Author: Michael Abreu
 # Version: 0.1.0
 # Description: This library file contains lots of useful bash functions that I've

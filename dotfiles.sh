@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-echo "Shell: $SHELL"
 # Author: Michael Abreu
 # Version: 0.1.0
 #============================
