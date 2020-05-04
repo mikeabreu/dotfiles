@@ -27,18 +27,10 @@
         "curl",
         "wget",
         "grc",
-        "htop"
+        "htop",
+        "bat"
     ],
     "configs_home": [
-        "zsh/.zshrc_default",
-        "iterm2/main.json",
-        "ssh/ssh_config",
-        "vim/.vimrc_default",
-        "vscode/settings.json"
-    ],
-    "configs_etc": [
-        "ssh/sshd_config"
-    ],
-    "configs_etc_symlink": true,
-    "tools": []
+        "macos=.zshrc"
+    ]
 }

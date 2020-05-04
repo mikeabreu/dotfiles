@@ -36,14 +36,14 @@ function install_brew {
     return $?
 }
 function install_brew_bash {
-    check_bash_version && display_success "Skipping: System Package bash (Already Installed and 4.4+)" && return 0
+    check_bash_version && display_warning "Skipping: System Package: bash (Already Installed and 4.4+)" && return 0
     display_info "Installing package 'bash' with brew."
     brew install bash
     return $?
 }
 function install_brew_coreutils {
     command_exists timeout && {
-        display_success "Skipping: System Package: coreutils (Already Installed)"
+        display_warning "Skipping: System Package: coreutils (Already Installed)"
         return 0
     }
     [[ $OPERATING_SYSTEM != "Darwin" ]] && {
@@ -61,7 +61,7 @@ function install_brew_coreutils {
 function install_shell {
     local _shell="$1"
     [[ $OPERATING_SYSTEM == "Darwin" ]] && {
-        local user_shell="$( dscl . -read /Users/testuser UserShell | awk -F':' '{print $2}' \
+        local user_shell="$( dscl . -read /Users/$(whoami) UserShell | awk -F':' '{print $2}' \
             | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -o "$(which $_shell)" )"
     } || {
         local user_shell="$( grep "$(whoami)" /etc/passwd | grep -o "$(which $_shell)" )"
@@ -158,7 +158,7 @@ function install_oh_my_zsh {
     # precedence over umasks except for filesystems mounted with option "noacl".
     local last_umask="$(umask)"
     umask g-w,o-w
-    display_info "Cloning Oh My Zsh into 'dotfiles/_home/.oh-my-zsh'"
+    display_info "Installing Oh My Zsh"
     git clone -c core.eol=lf -c core.autocrlf=false \
         -c fsck.zeroPaddedFilemode=ignore \
         -c fetch.fsck.zeroPaddedFilemode=ignore \
@@ -174,10 +174,12 @@ function install_spaceship_theme {
     local ohmyzsh_dir="$1"
     [[ -d "$ohmyzsh_dir" ]] && {
         local custom_theme_dir="${ohmyzsh_dir}/custom/themes"
-        [[ ! -e "${custom_theme_dir}/spaceship-prompt" ]] && {
+        [[ ! -e "${ohmyzsh_dir}/themes/spaceship.zsh-theme" ]] && {
             display_info "Installing Spaceship Prompt theme"
-            git clone https://github.com/denysdovhan/spaceship-prompt.git "${custom_theme_dir}/spaceship-prompt"
-            ln -s "${custom_theme_dir}/spaceship-prompt/spaceship.zsh-theme" "${custom_theme_dir}/spaceship.zsh-theme"
+            [[ ! -d "${custom_theme_dir}/spaceship-prompt" ]] && { 
+                git clone https://github.com/denysdovhan/spaceship-prompt.git "${custom_theme_dir}/spaceship-prompt"
+            }
+            ln -s "${custom_theme_dir}/spaceship-prompt/spaceship.zsh-theme" "${ohmyzsh_dir}/themes/spaceship.zsh-theme"
         } || { display_warning "Skipping: Shell Theme: Spaceship (Already Installed)"; }
     }
 }

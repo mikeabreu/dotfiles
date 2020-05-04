@@ -142,6 +142,17 @@ function run_elevated_cmd {
 function safe_copy {
     local src_file="$1"
     local dst_file="${2:-"./"}"
+    local backup_folder="${3:-""}"
+    [[ -n "$backup_folder" ]] && {
+        # Backup dir exists
+        [[ -e "$backup_folder" ]] && [[ ! -d "$backup_folder" ]] && {
+            # Remove any blocker files
+            display_warning "Removing blocker file: $backup_folder"
+            rm -fr "$backup_folder"
+        }
+        # Create it if it doesn't already exist
+        [[ ! -e "$backup_folder" ]] && mkdir -p "$backup_folder"
+    }
     diff "$src_file" "$dst_file" &>/dev/null && {
         display_warning "Skipping: '$src_file' is the same file as '$dst_file'"
         return 0
@@ -155,14 +166,20 @@ function safe_copy {
                 local dst_path="${dst_file}/${src_filename}"
         } || {  local dst_path="${dst_file}${src_filename}"; }
         # Check if we need to backup any files that might be overwritten
-        [[ -e "$dst_path" ]] && backup_file "$dst_path"
+        [[ -e "$dst_path" ]] && {
+            [[ -n "$backup_folder" ]] && backup_file "${backup_folder}/$dst_path"
+            [[ -z "$backup_folder" ]] && backup_file "$dst_path"
+        }
     }
     [[ ! -e "$dst_file" ]] && [[ "${dst_file: -1}" == '/' ]] && {
         display_info "Making directory: $dst_file"
         mkdir -p "$dst_file"
     }
     # Check if dst_file exists and isn't a directory.
-    [[ -e "$dst_file" ]] && [[ ! -d "$dst_file" ]] && backup_file "$dst_file"
+    [[ -e "$dst_path" ]] && [[ ! -d "$dst_file" ]] && {
+        [[ -n "$backup_folder" ]] && backup_file "${backup_folder}/$dst_path"
+        [[ -z "$backup_folder" ]] && backup_file "$dst_path"
+    }
     # Perform copy operations
     [[ -d "$src_file" ]] && {
         [[ -n "$dst_path" ]] && {
@@ -188,11 +205,16 @@ function safe_copy {
 function backup_file {
     # ratelimit 1
     local src_file="$1"
-    local dst_file="$src_file.$(date +%s).backup"
+    local count="${2:-"1"}"
+    local dst_file="$src_file.${count}.backup"
     [[ -e "$dst_file" ]] && {
-        display_warning "File exists: $dst_file performing recursive backup call"
+        diff "$src_file" "$dst_file" &> /dev/null && {
+            display_warning "Skipping: File Backup: The file $src_file is the same as $dst_file there is no need to backup."
+        }
+        local new_count=$(($count+1))
+        display_warning "File exists: $dst_file retrying as ${src_file}.${new_count}.backup"
         # Recursive call.
-        backup_file "$src_file" "$dst_file"
+        backup_file "$src_file" "$new_count"
         return 1
     }
     # Display messages

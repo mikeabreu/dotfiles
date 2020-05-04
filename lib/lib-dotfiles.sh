@@ -53,6 +53,7 @@ declare -A DOTFILES_DIRS=(
     [ETC]="${DOTFILES}/_etc"
     [BIN]="${DOTFILES}/_bin"
     [LOGS]="${DOTFILES}/_logs"
+    [BACKUP]="${DOTFILES}/_backup"
     [CONFIGS]="${DOTFILES}/configs"
     [CONFIGS_HOME]="${DOTFILES}/configs/home"
     [CONFIGS_ETC]="${DOTFILES}/configs/etc"
@@ -157,8 +158,8 @@ function install_profile {
         local _files=($( ls -A "${DOTFILES_DIRS[HOME]}" ))
         for _file in "${_files[@]}";do
             [[ $OPERATING_SYSTEM == "Darwin" ]] && {
-                    ls -lAhG "${HOME}/${_file}"
-            } || {  ls -lAh --color=always "${HOME}/${_file}"; }
+                    /bin/ls -lAh -G "${HOME}/${_file}"
+            } || {  /bin/ls -lAh --color=always "${HOME}/${_file}"; }
         done
     }
     [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC]}" ]] && {
@@ -167,7 +168,9 @@ function install_profile {
         stow -t "/etc/" "_etc/"
         local _files=($( ls -A "${DOTFILES_DIRS[ETC]}" ))
         for _file in "${_files[@]}";do
-            ls -lAh --color=always "/etc/${_file}"
+            [[ $OPERATING_SYSTEM == "Darwin" ]] && {            
+                    /bin/ls -lAhG "/etc/${_file}"
+            } || {  /bin/ls -lAh --color=always "/etc/${_file}"; }
         done
     }
     display_bar
@@ -355,13 +358,13 @@ function setup_configs {
                 [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$config]}"
                 local config_file="${config_directory}/${config_files[$config]}/${tags[$config]}=${config}"
                 [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path"
+                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
                 } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
             } || {  
                 # file doesnt have a tag
                 local config_file="${config_directory}/${config_files[$config]}/${config}"
                 [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path"
+                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
                 } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
             }
         } || {
@@ -373,13 +376,13 @@ function setup_configs {
                 [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$config]}"
                 local config_file="${config_directory}/${tags[$config]}=${config}"
                 [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path"
+                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
                 } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
             } || {  
                 # file doesnt have a tag
                 local config_file="${config_directory}/${config}"
                 [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path"
+                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
                 } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
             }
         }
