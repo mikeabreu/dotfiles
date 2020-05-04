@@ -5,3 +5,4 @@ _logs
 _home
 _etc
 .vscode
+.DS_Store
