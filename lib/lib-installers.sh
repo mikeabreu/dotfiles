@@ -246,6 +246,8 @@ function install_iterm2 {
         display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
         return 0
     }
+    display_bar
+    display_title "Installing iTerm2"
     local download_link="$( curl https://www.iterm2.com/downloads.html 2>/dev/null  |
         grep -oE '<a\s+(?:[^>]*?\s+)?href=(["])(.*?)\1'                             | 
         grep "stable" | head -n1 | awk -F'"' '{print $2}')"
@@ -254,7 +256,7 @@ function install_iterm2 {
     prompt_user message="Do you wish to download this package and install it? [Y/n]: " \
         warning_message="The download link was gathered by a html scrapper, verify it's the latest." \
         failure_message="You chose not to install iterm2 with the download link: $download_link" \
-        success_message="" error_message="" warning_message=""
+        success_message="" error_message=""
     display_info "Downloading file from: $download_link"
     curl "$download_link" > "$filename"
     display_info "Unzipping: $filename into /Applications/"

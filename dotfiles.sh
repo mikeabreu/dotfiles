@@ -169,7 +169,7 @@ function main {
     install_profile "$PROFILE_FILENAME"
     # Fix oh-my-zsh completions on macOS
     [[ $OPERATING_SYSTEM == "Darwin" ]] && {
-        compaudit | xargs chmod g-w,o-w
+        $(which ${DOTFILES_PROFILE[SHELL]}) -c "compaudit | xargs chmod g-w,o-w"
     }
     display_info "Finished setting up shell. Starting new shell. Restart terminal to start fresh."
     $(which ${DOTFILES_PROFILE[SHELL]})
