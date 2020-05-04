@@ -1,3 +1,8 @@
+[[ $_LOADED_GRC == true ]] && {
+    [[ $DEBUG == true ]] && display_debug "Skipping: Duplicate source attempt on grc.zsh"
+    return 0
+}
+declare _LOADED_GRC=true
 if [[ "$TERM" != dumb ]] && (( $+commands[grc] )) ; then
   # Prevent grc aliases from overriding zsh completions.
   setopt COMPLETE_ALIASES

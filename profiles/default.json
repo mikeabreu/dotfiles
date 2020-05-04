@@ -3,11 +3,7 @@
     "shell": "zsh",
     "shell_framework": "oh-my-zsh",
     "shell_theme": "spaceship-prompt",
-    "shell_plugins_no_installation": [
-        "git",
-        "tmux"
-    ],
-    "shell_plugins_to_install": [
+    "shell_plugins": [
         "zsh-autosuggestions",
         "zsh-syntax-highlighting"
     ],
@@ -19,8 +15,7 @@
     ],
     "configs_home": [
         "default=.vimrc",
-        "default=.zshrc"
-    ],
-    "configs_etc": [],
-    "tools": []
+        "default=.zshrc",
+        ".grc/default=grc.zsh"
+    ]
 }

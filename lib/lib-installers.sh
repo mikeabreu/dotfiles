@@ -225,6 +225,24 @@ function install_docker {
         esac
     fi
 }
+function install_iterm2 {
+    [[ -e "/Applications/iTerm2.app" ]] && {
+        display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
+        return 0
+    }
+    local download_link="$( curl https://www.iterm2.com/downloads.html 2>/dev/null \
+        | grep -oE '<a\s+(?:[^>]*?\s+)?href=(["])(.*?)\1' | grep "stable" | head -n1 | awk -F'"' '{print $2}')"
+    local filename="$(echo "$download_link" | awk -F'/' '{print $NF}')"
+    display_info "Download link  is: $download_link"
+    prompt_user message="Do you wish to download this package and install it? [Y/n]: " \
+        failure_message="You chose not to install iterm2 with the download link: $download_link" \
+        success_message="" error_message="" warning_message=""
+    display_info "Downloading file from: $download_link"
+    curl "$download_link" > "$filename"
+    display_info "Unzipping: $filename into /Applications/"
+    unzip "$filename" -d "/Applications/"
+    return $?
+}
 #============================
 #   Main Execution / Initialization
 #============================

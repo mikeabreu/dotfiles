@@ -1,13 +1,15 @@
 # -----------------------------------------------
 # Set Variables
 # -----------------------------------------------
-
 # -----------------------------------------------
 # Environment Variables
 # -----------------------------------------------
-export ZSH=${HOME}/.oh-my-zsh
-export TERM='xterm-256color'
-export PATH="${PATH}:${HOME}/bin:${HOME}/dotfiles/_bin:"
+export ORIG_PATH="${PATH}"
+export GOPATH="${HOME}/gocode"
+export GOBIN="${GOPATH}/bin"
+export PATH="${PATH}:${HOME}/bin:${GOBIN}"
+export ZSH="${HOME}/.oh-my-zsh"
+export TERM="xterm-256color"
 
 # -----------------------------------------------
 # Oh My ZSH Configuration
@@ -15,7 +17,12 @@ export PATH="${PATH}:${HOME}/bin:${HOME}/dotfiles/_bin:"
 declare ZSH_THEME="spaceship"
 declare ZSH_TMUX_AUTOSTART="false"
 declare ZSH_TMUX_AUTOSTART_ONCE="false"
-declare -a plugins=( %%PLUGINS%% )
+declare -a plugins=(
+    "git"
+    "tmux"
+    "zsh-autosuggestions"
+    "zsh-syntax-highlighting"
+)
 [[ -r "${ZSH}/oh-my-zsh.sh" ]] && source "${ZSH}/oh-my-zsh.sh"
 
 # -----------------------------------------------
@@ -91,4 +98,5 @@ docker_clean() {
 # -----------------------------------------------
 # Sourcing
 # -----------------------------------------------
-[[ -s "${HOME}/grc/grc.zsh" ]] && source ${HOME}/grc/grc.zsh
+# GRC Sourcing
+[[ -f "${HOME}/.grc/grc.zsh" ]] && source "${HOME}/.grc/grc.zsh"

@@ -39,8 +39,7 @@ declare -A PROFILE_SCHEMA=(
     [SHELL]="string"
     [SHELL_FRAMEWORK]="string"
     [SHELL_THEME]="string"
-    [SHELL_PLUGINS_NO_INSTALLATION]="array"
-    [SHELL_PLUGINS_TO_INSTALL]="array"
+    [SHELL_PLUGINS]="array"
     [SYSTEM_PACKAGES]="array"
     [CONFIGS_HOME]="array"
     [CONFIGS_ETC]="array"
@@ -54,6 +53,7 @@ declare -A DOTFILES_DIRS=(
     [BIN]="${DOTFILES}/_bin"
     [LOGS]="${DOTFILES}/_logs"
     [BACKUP]="${DOTFILES}/_backup"
+    [TMP]="${DOTFILES}/_tmp"
     [CONFIGS]="${DOTFILES}/configs"
     [CONFIGS_HOME]="${DOTFILES}/configs/home"
     [CONFIGS_ETC]="${DOTFILES}/configs/etc"
@@ -110,9 +110,9 @@ function install_profile {
         # Shell Theme
         install_shell_theme "${DOTFILES_PROFILE[SHELL_THEME]}" "${DOTFILES_DIRS[HOME]}"
     }
-    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS_TO_INSTALL]}" ]] && {
+    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS]}" ]] && {
         # Shell Plugins
-        install_shell_plugins "${DOTFILES_PROFILE[SHELL_PLUGINS_TO_INSTALL]}" "${DOTFILES_DIRS[HOME]}"
+        install_shell_plugins "${DOTFILES_PROFILE[SHELL_PLUGINS]}" "${DOTFILES_DIRS[HOME]}"
     }
     [[ -n "${DOTFILES_PROFILE[SYSTEM_PACKAGES]}" ]] && {
         # System Packages
@@ -124,15 +124,15 @@ function install_profile {
     #############
     [[ -n "${DOTFILES_PROFILE[CONFIGS_HOME]}" ]] && {
         # Configs: Home
-        setup_configs config_name="HOME" \
-            config_directory="${DOTFILES_DIRS[CONFIGS_HOME]}" \
-            target_directory="${DOTFILES_DIRS[HOME]}"
+        setup_configs name="HOME" \
+            config_dir="${DOTFILES_DIRS[CONFIGS_HOME]}" \
+            target_dir="${DOTFILES_DIRS[HOME]}"
     }
     [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC]}" ]] && {
         # Configs: ETC
-        setup_configs config_name="ETC" \
-            config_directory="${DOTFILES_DIRS[CONFIGS_ETC]}" \
-            target_directory="${DOTFILES_DIRS[ETC]}"
+        setup_configs name="ETC" \
+            config_dir="${DOTFILES_DIRS[CONFIGS_ETC]}" \
+            target_dir="${DOTFILES_DIRS[ETC]}"
     }
     [[ -n "${DOTFILES_PROFILE[TOOLS]}" ]] && {
         # Tools
@@ -141,17 +141,12 @@ function install_profile {
     #####################
     ### Configuration ###
     #####################
-    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS_TO_INSTALL]}" ]] || 
-    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS_NO_INSTALLATION]}" ]] && {
-        # Shell Plugins
-        configure_shell_plugins shell="${DOTFILES_PROFILE[SHELL]}" \
-            plugins="$( echo "${DOTFILES_PROFILE[SHELL_PLUGINS_TO_INSTALL]}" "${DOTFILES_PROFILE[SHELL_PLUGINS_NO_INSTALLATION]}" )"
-            
-    }
+
     ####################
     ### Link Folders ###
     ####################
     [[ -n "${DOTFILES_PROFILE[CONFIGS_HOME]}" ]] && {
+        # GNU STOW _home to ~/
         display_bar
         display_title "GNU Stowing '${DOTFILES_DIRS[HOME]}/_home' to '${HOME}'"
         stow -t "${HOME}/" "_home/"
@@ -163,6 +158,7 @@ function install_profile {
         done
     }
     [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC]}" ]] && {
+        # GNU STOW _etc to /etc/
         display_bar
         display_title "GNU Stowing '${DOTFILES_DIRS[HOME]}/_etc' to '/etc'"
         stow -t "/etc/" "_etc/"
@@ -192,15 +188,9 @@ function display_profile {
         display_message "${CGREEN}SHELL_THEME:${CE} ${CWHITE} ${DOTFILES_PROFILE[SHELL_THEME]}"
     }
     # Shell Plugins
-    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS_NO_INSTALLATION]}" ]] && {
-        display_message "${CGREEN}SHELL_PLUGINS_NO_INSTALLATION:${CE}"
-        for plugin in ${DOTFILES_PROFILE[SHELL_PLUGINS_NO_INSTALLATION]}; do
-            display_message "\t${CGREEN}- PLUGIN:${CE} ${CWHITE} ${plugin}"
-        done
-    }
-    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS_TO_INSTALL]}" ]] && {
-        display_message "${CGREEN}SHELL_PLUGINS_TO_INSTALL:${CE}"
-        for plugin in ${DOTFILES_PROFILE[SHELL_PLUGINS_TO_INSTALL]}; do
+    [[ -n "${DOTFILES_PROFILE[SHELL_PLUGINS]}" ]] && {
+        display_message "${CGREEN}SHELL_PLUGINS:${CE}"
+        for plugin in ${DOTFILES_PROFILE[SHELL_PLUGINS]}; do
             display_message "\t${CGREEN}- PLUGIN:${CE} ${CWHITE} ${plugin}"
         done
     }
@@ -242,53 +232,52 @@ function display_profile {
 #   Configuration/Setup Functions
 #============================
 function setup_profile_data {
+    # Reads profile.json and creates an assoc array, DOTFILES_PROFILE, with all found key/values
     local profile_file="$1"
     [[ ! -r "$profile_file" ]] && display_error "Cannot read profile file: $profile_file" && exit 1
     [[ $DEBUG == true ]] && display_debug "Determing profile variables from file or default."
     for key in "${!PROFILE_SCHEMA[@]}";do
-        # key: [ NAME SHELL SHELL_FRAMEWORK ... ]
-        # PROFILE_SCHEMA[$key]: [ string string string string array ... ]
+        # For every key/value in PROFILE_SCHEMA, setup that key/value in DOTFILES_PROFILE from profile json
+        #   key: [ NAME SHELL SHELL_FRAMEWORK ... ]
+        #   PROFILE_SCHEMA[$key]: [ string string string string array ... ]
+        # setup_var_data "KEY" "TYPE" "PROFILE.JSON" > DOTFILES_PROFILE[KEY]="Value from PROFILE.JSON for KEY"
         setup_var_data "$key" "${PROFILE_SCHEMA[$key]}" "$profile_file"
         # If value is null, set it to "" for empty checks in bash.
         [[ "${DOTFILES_PROFILE[$key]}" == "null" ]] && DOTFILES_PROFILE[$key]=""
     done
 }
 function setup_var_data {
-    local -A _types=(
-        [string]="string"
-        [boolean]="boolean"
-        [array]="array"
-        [number]="number"
-    )
     local varname="$1"
-    local data_type="${2:-"${_types[string]}"}"
+    local data_type="${2:-"string"}"
     local profile_file="$3"
     local lower_varname="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
     local upper_varname="$(echo "$1" | tr "[:lower:]" "[:upper:]")"
     case "$data_type" in
-        ${_types[string]})
-            jq ".${lower_varname} | length" "$profile_file" &>/dev/null && {
-                DOTFILES_PROFILE[${upper_varname}]="$(jq ".${lower_varname}" "$profile_file" | sed 's/"//g')"
-                [[ $DEBUG == true ]] && display_debug "DOTFILES_PROFILE[${upper_varname}]: ${DOTFILES_PROFILE[${upper_varname}]}"
-            } ;;
-        ${_types[boolean]})
-            DOTFILES_PROFILE[${varname}]="$(jq ".${lower_varname}" "$profile_file")"
-            [[ $DEBUG == true ]] && [[ -n "${DOTFILES_PROFILE[$varname]}" ]] && 
-                display_debug "DOTFILES_PROFILE[${varname}]: ${DOTFILES_PROFILE[${varname}]}"
-            ;;
-        ${_types[array]})
-            jq ".${lower_varname} | length" "$profile_file" &>/dev/null && {
-                DOTFILES_PROFILE[${upper_varname}]="$(_arr=(
-                    $(jq ".${lower_varname}" "$profile_file" | sed -e 's/"//g' -e 's/\[//g' -e 's/\]//g' -e 's/\,//g')
-                    ) && echo "${_arr[@]}")"
-                [[ $DEBUG == true ]] && display_debug "DOTFILES_PROFILE[${upper_varname}]: ${DOTFILES_PROFILE[${upper_varname}]}"
-            } ;;
-        ${_types[number]})
-            jq ".${varname} | length" "$profile_file" &>/dev/null && {
-                DOTFILES_PROFILE[${varname}]="$(jq ".${varname}" "$profile_file" | sed 's/"//g')"
-                [[ $DEBUG == true ]] && display_debug "DOTFILES_PROFILE[${varname}]: ${DOTFILES_PROFILE[${varname}]}"
-            } ;;
-        *) [[ $DEBUG == true ]] && display_debug "Invalid type passed to set_var_number: $data_type for varname: $varname" && return 1 ;;
+        string) jq ".${lower_varname} | length" "$profile_file" &>/dev/null && {
+                    DOTFILES_PROFILE[${upper_varname}]="$(jq ".${lower_varname}" "$profile_file" | sed 's/"//g')"
+                    [[ $DEBUG == true ]] && 
+                        display_debug "DOTFILES_PROFILE[${upper_varname}]: ${DOTFILES_PROFILE[${upper_varname}]}"
+                } ;;
+        boolean)
+                DOTFILES_PROFILE[${varname}]="$(jq ".${lower_varname}" "$profile_file")"
+                [[ $DEBUG == true ]] && [[ -n "${DOTFILES_PROFILE[$varname]}" ]] && 
+                    display_debug "DOTFILES_PROFILE[${varname}]: ${DOTFILES_PROFILE[${varname}]}" ;;
+        array)
+                jq ".${lower_varname} | length" "$profile_file" &>/dev/null && {
+                    DOTFILES_PROFILE[${upper_varname}]="$(_arr=(
+                        $(jq ".${lower_varname}" "$profile_file" | sed -e 's/"//g' -e 's/\[//g' -e 's/\]//g' -e 's/\,//g')
+                        ) && echo "${_arr[@]}")"
+                    [[ $DEBUG == true ]] && 
+                        display_debug "DOTFILES_PROFILE[${upper_varname}]: ${DOTFILES_PROFILE[${upper_varname}]}"
+                } ;;
+        number)
+                jq ".${varname} | length" "$profile_file" &>/dev/null && {
+                    DOTFILES_PROFILE[${varname}]="$(jq ".${varname}" "$profile_file" | sed 's/"//g')"
+                    [[ $DEBUG == true ]] && display_debug "DOTFILES_PROFILE[${varname}]: ${DOTFILES_PROFILE[${varname}]}"
+                } ;;
+        *)      [[ $DEBUG == true ]] &&
+                    display_debug "Invalid type passed to setup_var_data: $data_type for varname: $varname"
+                return 1 ;;
     esac
 }
 function setup_configs {
@@ -299,126 +288,101 @@ function setup_configs {
         local value="$( echo "$_arg" | cut -f2 -d= )"
         _args+=([$key]="$value")
     done
-    # setup variables
-    local config_name="${_args[config_name]:-""}"
-    local config_directory="${_args[config_directory]:-""}"
-    local target_directory="${_args[target_directory]:-""}"
-    # display title and setup config_files
-    case "$config_name" in
+    # setup variables from args
+    local name="${_args[name]:-""}"
+    local config_dir="${_args[config_dir]:-""}"
+    local target_dir="${_args[target_dir]:-""}"
+    local -A configs=()
+    local -A tags=()
+    # display title and setup dirty config_files
+    case "$name" in
         HOME)   display_title "Copying files from configs/home into _home/"
-                local _config_files=($( echo "${DOTFILES_PROFILE[CONFIGS_HOME]}" )) ;;
+                local -a _configs=($( echo "${DOTFILES_PROFILE[CONFIGS_HOME]}" )) ;;
         ETC)    display_title "Copying files from configs/etc into _etc/"
-                local _config_files=($( echo "${DOTFILES_PROFILE[CONFIGS_ETC]}" )) ;;
-        *)      display_error "Bad configs: $config_name" && exit 1 ;;
+                local -a _configs=($( echo "${DOTFILES_PROFILE[CONFIGS_ETC]}" )) ;;
+        *)      display_error "Bad configs: $name" && exit 1 ;;
     esac
-    # Setup assoc array for cleaned config data and tags
-    local -A config_files=()
-    local -A tags=""
-    # Clean config data
-    for config in "${_config_files[@]}";do
-        # Attempt to get the filename without the tag '[A-Za-z0-9]='
-        local config_file="$( echo $config | awk -F'=' '{$1 = ""; print $0}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
-        [[ -z "$config_file" ]] && {
-            # file doesnt have a tag.
-            local config_file="$config"
-            local tag=""
+    # Clean config strings into configs[filename]="path" and tags[filename]="tag"
+    for _config in "${_configs[@]}";do
+        # Attempt to get the filename without the tag | 'tag=filename' or 'path/tag=filename'
+        # Empty if no tag is there.
+        local _filename="$( echo $_config   | 
+            awk -F'=' '{$1 = ""; print $0}' | 
+            sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
+        [[ -z "$_filename" ]] && {
+            # file doesnt have a tag. Set _filename to raw filename
+            local _filename="$_config"
+            local _tag=""
         } || {
-            # file has a tag
-            local tag="$( echo $config | awk -F'=' '{print $1}' | awk -F'/' '{print $NF}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
+            # file has a tag, grab it
+            local _tag="$( echo $_config    | 
+                awk -F'=' '{print $1}'      | 
+                awk -F'/' '{print $NF}'     | 
+                sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
         }
-        # Determine if file has a file
-        [[ "$config" == *"/"* ]] && {
+        # Determine if file has a path
+        [[ "$_config" == *"/"* ]] && {
             # file has a path
-            [[ "${config: -1}" == '/' ]] && {
+            [[ "${_config: -1}" == '/' ]] && {
                 # file has '/' as ending character, ignore it
-                local _config="${config::-1}"
-                local path="${_config%/*}"
+                local __config="${_config::-1}"
+                local _path="${__config%/*}"
             } || {
                 # file doesnt have '/' as ending character
-                local path="${config%/*}"
+                local _path="${_config%/*}"
             }
         } || {
             # file doesnt have a path
-            local path=""
+            local _path=""
         }
-        # Set assoc pair of [config_filename]="path/to/filename || blank for no path"
-        config_files[$config_file]="$path"
-        # Set assoc pair of [config_filename]="tag || blank for no tag"
-        [[ -n "$tag" ]] && tags[$config_file]="$tag"
+        # Setup clean configs_file with key=filename value=path
+        configs[$_filename]="$_path"
+        # Setup clean tags with key=filename value=tag
+        tags[$_filename]="$_tag"
     done
-    # Copy over files to target_directory
-    for config in "${!config_files[@]}";do
-        [[ -n "${config_files[$config]}" ]] && {
+    # Copy over cleaned config files to target_dir
+    for _filename in "${!configs[@]}";do
+        [[ -n "${configs[$_filename]}" ]] && {
             # file has a path
-            local rel_path="${target_directory}/${config_files[$config]}/$config"
-            # mkdir -p "${target_directory}/${config_files[$config]}"
-            [[ $VERBOSE == true ]] && display_info "Filename: $config"
-            [[ -n "${tags[$config]}" ]] && {
+            local target_path="${target_dir}/${configs[$_filename]}/$_filename"
+            [[ ! -e "${target_dir}/${configs[$_filename]}" ]] && {
+                mkdir -p "${target_dir}/${configs[$_filename]}"
+            }
+            [[ $VERBOSE == true ]] && display_info "Filename: $_filename"
+            [[ -n "${tags[$_filename]}" ]] && {
                 # file has a tag
-                [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$config]}"
-                local config_file="${config_directory}/${config_files[$config]}/${tags[$config]}=${config}"
-                [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
+                [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$_filename]}"
+                local src_path="${config_dir}/${configs[$_filename]}/${tags[$_filename]}=${_filename}"
+                [[ -e "$src_path" ]] && {
+                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
+                } || { display_error "Exiting: Config file doesnt exist: $src_path"; exit 1; }
             } || {  
                 # file doesnt have a tag
-                local config_file="${config_directory}/${config_files[$config]}/${config}"
-                [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
+                local src_path="${config_dir}/${configs[$_filename]}/${_filename}"
+                [[ -e "$src_path" ]] && {
+                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
+                } || { display_error "Exiting: Config file doesnt exist: $src_path"; exit 1; }
             }
         } || {
             # file doesnt have a path
-            local rel_path="${target_directory}/$config"
-            [[ $VERBOSE == true ]] && display_info "Filename: $config"
-            [[ -n "${tags[$config]}" ]] && {
+            local target_path="${target_dir}/$_filename"
+            [[ $VERBOSE == true ]] && display_info "Filename: $_filename"
+            [[ -n "${tags[$_filename]}" ]] && {
                 # file has a tag
-                [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$config]}"
-                local config_file="${config_directory}/${tags[$config]}=${config}"
-                [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
+                [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$_filename]}"
+                local src_path="${config_dir}/${tags[$_filename]}=${_filename}"
+                [[ -e "$src_path" ]] && {
+                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
+                } || { display_error "Exiting: Config file doesnt exist: $src_path"; exit 1; }
             } || {  
                 # file doesnt have a tag
-                local config_file="${config_directory}/${config}"
-                [[ -e "$config_file" ]] && {
-                    safe_copy "$config_file" "$rel_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Exiting: Config file doesnt exist: $config_file"; exit 1; }
+                local src_path="${config_dir}/${config}"
+                [[ -e "$src_path" ]] && {
+                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
+                } || { display_error "Exiting: Config file doesnt exist: $src_path"; exit 1; }
             }
         }
     done
-}
-function configure_shell_plugins {
-    # handle associative arguments
-    local -A _args
-    for _arg in "$@";do
-        local key="$(echo "$_arg" | cut -f1 -d=)"
-        local value="$(echo "$_arg" | cut -f2 -d=)"
-        _args+=([$key]="$value")
-    done
-    # assign local variables from associative arguments
-    local dotfiles_home="${_args[dotfiles_home]:-"${HOME}/dotfiles/_home"}"
-    local plugins="${_args[plugins]:-""}"
-    local _shell="${_args[shell]}"
-    case "$_shell" in
-        # Add Custom Shell RC File Here
-        zsh)    local _rc=".zshrc"  ;;
-        bash)   local _rc=".bashrc" ;;
-        *) display_error "Couldn't find rc file for shell: $shell"; return 1 ;;
-    esac
-    # TODO
-    display_bar
-    display_title "Configuring plugins into file: '${dotfiles_home}/${_rc}'"
-    [[ -r "${dotfiles_home}/${_rc}" ]] && {
-        local _plugins="$(echo "${plugins[@]}")"
-        [[ $OPERATING_SYSTEM == "Darwin" ]] && {
-            # MacOS
-            sed -i "" -e "s#%%PLUGINS%%#${_plugins}#" "${dotfiles_home}/${_rc}"
-        } || {
-            # Not MacOS
-            sed -i -e "s#%%PLUGINS%%#${_plugins}#" "${dotfiles_home}/${_rc}"
-        }
-    } || { display_error "Couldn't find your rc file at: '${dotfiles_home}/${_rc}'"; }
 }
 #============================
 #   Main Execution / Initialization
