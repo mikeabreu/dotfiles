@@ -21,9 +21,6 @@ DOTFILES_LOGS="${DOTFILES}/_logs" && LIBCORE_LOGS="$DOTFILES_LOGS"
 [[ -r "lib/lib-core.sh" ]] && { source "lib/lib-core.sh" || { 
         echo "DOTFILES: Failed to load lib-core.sh, run with debug true for details"; exit 1; }
 } || {  echo "DOTFILES: Missing lib-core.sh, run with debug true for details"; exit 1; }
-[[ -r "lib/lib-dotfiles.sh" ]] && { source "lib/lib-dotfiles.sh" || { 
-        echo "DOTFILES: Failed to load lib-dotfiles.sh, run with debug true for details"; exit 1; }
-} || {  echo "DOTFILES: Missing lib-dotfiles.sh, run with debug true for details"; exit 1; }
 [[ -r "lib/lib-installers.sh" ]] && { source "lib/lib-installers.sh" || { 
         echo "DOTFILES: Failed to load lib-installers.sh, run with debug true for details"; exit 1; } 
 } || {  echo "DOTFILES: Missing lib-installers.sh, run with debug '-D' true for details"; exit 1; }
@@ -112,6 +109,9 @@ function main {
         install_system_package "tmux"
         install_system_package "git"
     fi
+    [[ -r "lib/lib-dotfiles.sh" ]] && { source "lib/lib-dotfiles.sh" || { 
+            echo "DOTFILES: Failed to load lib-dotfiles.sh, run with debug true for details"; exit 1; }
+    } || {  echo "DOTFILES: Missing lib-dotfiles.sh, run with debug true for details"; exit 1; }
     display_bar
     if [[ $CREATE_TMUX_SESSION == true ]];then
         # Load tmux
