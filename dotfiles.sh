@@ -4,6 +4,7 @@
 #============================
 #   Configurable Variables
 #============================
+MAC_RESTART=true
 CREATE_TMUX_SESSION=true
 DEBUG=false
 VERBOSE=false
@@ -58,6 +59,7 @@ function handle_arguments {
     # Arg: -s | Skip installing dependencies
     # Arg: -d | Debug messaging
     # Arg: -v | Enable Verbose
+    # Arg: -m | Skip relaunching bash on macOS
     while getopts ":p:htsdv" opt;do
         case $opt in
             p)  PROFILE_FILENAME="$OPTARG" ;;
@@ -66,6 +68,7 @@ function handle_arguments {
             s)  INSTALL_DEPENDENCIES=false ;;
             d)  DEBUG=true ;;
             v)  VERBOSE=true ;;
+            m)  MAC_RESTART=false ;;
             \?) display_error "Invalid option: -$OPTARG. Exiting." >&2; exit 1 ;;
             :)  display_error "Option -$OPTARG requires an argument. Exiting." >&2; exit 1 ;;
         esac
@@ -137,20 +140,21 @@ function main {
         exit 0
     fi
     [[ $CREATE_TMUX_SESSION == false ]] &&
-    [[ $OPERATING_SYSTEM == "Darwin" ]] && {
+    [[ $OPERATING_SYSTEM == "Darwin" ]] &&
+    [[ $MAC_RESTART == true ]] && {
         # Restart bash shell to load 4.4+ bash
         display_warning "Restarting bash to upgrade to 4.4 features."
         [[ $VERBOSE == true ]] && [[ $DEBUG == true ]] && {
-            ./dotfiles.sh -vdtsp ${PROFILE_FILENAME}
+            ./dotfiles.sh -vdtsmp ${PROFILE_FILENAME}
         }
         [[ $VERBOSE == true ]] && [[ $DEBUG == false ]] && {
-            ./dotfiles.sh -vtsp ${PROFILE_FILENAME}
+            ./dotfiles.sh -vtsmp ${PROFILE_FILENAME}
         }
         [[ $VERBOSE == false ]] && [[ $DEBUG == true ]] && {
-            ./dotfiles.sh -dtsp ${PROFILE_FILENAME}
+            ./dotfiles.sh -dtsmp ${PROFILE_FILENAME}
         }
         [[ $VERBOSE == false ]] && [[ $DEBUG == false ]] && {
-            ./dotfiles.sh -tsp ${PROFILE_FILENAME}
+            ./dotfiles.sh -tsmp ${PROFILE_FILENAME}
         }
         exit 0
     }
