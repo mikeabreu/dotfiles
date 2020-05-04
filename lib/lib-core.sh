@@ -114,7 +114,7 @@ function run_elevated_cmd {
     # Handle arguments being passed in
     raw_arguments=("$@")
     args=()
-    for index in ${!raw_arguments[@]};do
+    for index in "${!raw_arguments[@]}";do
         [[ $index -eq 0 ]] && cmd=${raw_arguments[$index]}
         [[ $index -ne 0 ]] && args+=( ${raw_arguments[$index]} )
     done
