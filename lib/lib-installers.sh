@@ -60,7 +60,12 @@ function install_brew_coreutils {
 #============================
 function install_shell {
     local _shell="$1"
-    local user_shell="$(grep "$(whoami)" /etc/passwd | grep -o "$(which $_shell)")"
+    [[ $OPERATING_SYSTEM == "Darwin" ]] && {
+        local user_shell="$( dscl . -read /Users/testuser UserShell | awk -F':' '{print $2}' \
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//') | grep -o "$(which $_shell)""
+    } || {
+        local user_shell="$( grep "$(whoami)" /etc/passwd | grep -o "$(which $_shell)" )"
+    }
     display_bar
     display_title "Installing and changing user shell."
     [[ $DEBUG == true ]] && display_debug "User shell: '$user_shell' and desired_shell: '$_shell'"
