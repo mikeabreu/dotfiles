@@ -17,7 +17,8 @@
         "bat"
     ],
     "configs_home": [
-        "macos=.zshrc"
+        "macos=.zshrc",
+        ".grc/default=grc.zsh"
     ],
     "custom_installers": [
         "iterm2"
