@@ -156,7 +156,9 @@ function install_profile {
         stow -t "${HOME}/" "_home/"
         local _files=($( ls -A "${DOTFILES_DIRS[HOME]}" ))
         for _file in "${_files[@]}";do
-            ls -lAh --color=always "${HOME}/${_file}"
+            [[ $OPERATING_SYSTEM == "Darwin" ]] && {
+                    ls -lAhG "${HOME}/${_file}"
+            } || {  ls -lAh --color=always "${HOME}/${_file}"; }
         done
     }
     [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC]}" ]] && {
