@@ -120,7 +120,7 @@ function main {
             failure_message="You were not ready, run with -t to skip tmux." \
             success_message="" error_message="" warning_message=""
         display_title "Tmux: Attaching to session 'dotfiles'"
-        tmux send-keys "./dotfiles.sh -ts" Enter
+        tmux send-keys "./dotfiles.sh -tsp ${PROFILE_FILENAME}" Enter
         tmux attach-session -t dotfiles &>/dev/null
         display_warning "Tmux: Continuing execution in tmux session. Exiting."
         exit 0
