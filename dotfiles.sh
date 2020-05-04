@@ -135,6 +135,9 @@ function main {
     # Install and configure the profile to the system
     install_profile "$PROFILE_FILENAME"
     
+    [[ $OPERATING_SYSTEM == "Darwin" ]] && {
+        compaudit | xargs chmod g-w,o-w
+    }
     display_info "Finished setting up shell. Starting new shell. Restart terminal to start fresh."
     $(which ${DOTFILES_PROFILE[SHELL]})
 }
