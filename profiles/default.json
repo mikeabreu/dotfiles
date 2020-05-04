@@ -1,9 +1,9 @@
 {
-	"name": "default",
+    "name": "default",
     "shell": "zsh",
     "shell_framework": "oh-my-zsh",
     "shell_theme": "spaceship-prompt",
-	"shell_plugins_no_installation": [
+    "shell_plugins_no_installation": [
         "git",
         "tmux"
     ],
@@ -11,7 +11,7 @@
         "zsh-autosuggestions",
         "zsh-syntax-highlighting"
     ],
-	"system_packages": [
+    "system_packages": [
         "vim",
         "git",
         "tmux",

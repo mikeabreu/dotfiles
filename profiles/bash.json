@@ -1,7 +1,7 @@
 {
-	"name": "bash",
+    "name": "bash",
     "shell": "bash",
-	"system_packages": [
+    "system_packages": [
         "vim",
         "git",
         "tmux",
