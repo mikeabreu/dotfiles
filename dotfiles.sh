@@ -77,7 +77,7 @@ function handle_arguments {
 function main {
     # Handle Arguments
     handle_arguments "$@"
-    REQUIRE_PRIVILEGE=true && check_privileges
+    REQUIRE_PRIVILEGE=true
     if [[ $INSTALL_DEPENDENCIES == true ]];then
         # Welcome Message
         help_message

@@ -118,7 +118,6 @@ function install_profile {
     [[ -n "${DOTFILES_PROFILE[SYSTEM_PACKAGES]}" ]] && {
         # System Packages
         install_system_packages "${DOTFILES_PROFILE[SYSTEM_PACKAGES]}"
-        display_bar
     }
     [[ -n "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" ]] && {
         # Custom Installers

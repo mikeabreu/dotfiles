@@ -146,6 +146,7 @@ function install_custom_installers {
             *)  display_warning "LIB-INSTALLERS: No installer found for custom install: $installer";;
         esac
     done
+    display_bar
 }
 function install_system_packages {
     local packages=($(echo "$1"))
@@ -154,6 +155,7 @@ function install_system_packages {
     for package in "${packages[@]}"; do
         install_system_package $package
     done
+    display_bar
 }
 #============================
 #   Generic Installers       
