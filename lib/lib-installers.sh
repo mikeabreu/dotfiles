@@ -256,7 +256,7 @@ function install_iterm2 {
     prompt_user message="Do you wish to download this package and install it? [Y/n]: " \
         warning_message="The download link was gathered by a html scrapper, verify it's the latest." \
         failure_message="You chose not to install iterm2 with the download link: $download_link" \
-        success_message="" error_message=""
+        success_message="" error_message="" exit_on_failure=false
     display_info "Downloading file from: $download_link"
     curl "$download_link" > "$filename"
     display_info "Unzipping: $filename into /Applications/"
