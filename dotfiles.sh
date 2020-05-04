@@ -120,11 +120,40 @@ function main {
             failure_message="You were not ready, run with -t to skip tmux." \
             success_message="" error_message="" warning_message=""
         display_title "Tmux: Attaching to session 'dotfiles'"
-        tmux send-keys "./dotfiles.sh -tsp ${PROFILE_FILENAME}" Enter
+        [[ $VERBOSE == true ]] && [[ $DEBUG == true ]] && {
+            tmux send-keys "./dotfiles.sh -vdtsp ${PROFILE_FILENAME}" Enter
+        }
+        [[ $VERBOSE == true ]] && [[ $DEBUG == false ]] && {
+            tmux send-keys "./dotfiles.sh -vtsp ${PROFILE_FILENAME}" Enter
+        }
+        [[ $VERBOSE == false ]] && [[ $DEBUG == true ]] && {
+            tmux send-keys "./dotfiles.sh -dtsp ${PROFILE_FILENAME}" Enter
+        }
+        [[ $VERBOSE == false ]] && [[ $DEBUG == false ]] && {
+            tmux send-keys "./dotfiles.sh -tsp ${PROFILE_FILENAME}" Enter
+        }
         tmux attach-session -t dotfiles &>/dev/null
         display_warning "Tmux: Continuing execution in tmux session. Exiting."
         exit 0
     fi
+    [[ $CREATE_TMUX_SESSION == false ]] &&
+    [[ $OPERATING_SYSTEM == "Darwin" ]] && {
+        # Restart bash shell to load 4.4+ bash
+        display_warning "Restarting bash to upgrade to 4.4 features."
+        [[ $VERBOSE == true ]] && [[ $DEBUG == true ]] && {
+            ./dotfiles.sh -vdtsp ${PROFILE_FILENAME}
+        }
+        [[ $VERBOSE == true ]] && [[ $DEBUG == false ]] && {
+            ./dotfiles.sh -vtsp ${PROFILE_FILENAME}
+        }
+        [[ $VERBOSE == false ]] && [[ $DEBUG == true ]] && {
+            ./dotfiles.sh -dtsp ${PROFILE_FILENAME}
+        }
+        [[ $VERBOSE == false ]] && [[ $DEBUG == false ]] && {
+            ./dotfiles.sh -tsp ${PROFILE_FILENAME}
+        }
+        exit 0
+    }
     [[ -r "lib/lib-dotfiles.sh" ]] && { source "lib/lib-dotfiles.sh" || { 
             echo "DOTFILES: Failed to load lib-dotfiles.sh, run with debug true for details"; exit 1; }
     } || {  echo "DOTFILES: Missing lib-dotfiles.sh, run with debug true for details"; exit 1; }
@@ -134,7 +163,7 @@ function main {
     load_profile "$PROFILE_FILENAME"
     # Install and configure the profile to the system
     install_profile "$PROFILE_FILENAME"
-    
+    # Fix oh-my-zsh completions on macOS
     [[ $OPERATING_SYSTEM == "Darwin" ]] && {
         compaudit | xargs chmod g-w,o-w
     }
