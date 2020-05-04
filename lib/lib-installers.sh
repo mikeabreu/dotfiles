@@ -240,7 +240,7 @@ function install_docker {
     fi
 }
 function install_iterm2 {
-    [[ -e "/Applications/iTerm2.app" ]] && {
+    [[ -e "/Applications/iTerm.app" ]] && {
         display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
         return 0
     }
