@@ -1,0 +1,24 @@
+{
+    "name": "default",
+    "shell": "zsh",
+    "shell_framework": "oh-my-zsh",
+    "shell_theme": "spaceship-prompt",
+    "shell_plugins": [
+        "zsh-autosuggestions",
+        "zsh-syntax-highlighting"
+    ],
+    "system_packages": [
+        "vim",
+        "git",
+        "tmux",
+        "grc"
+    ],
+    "configs": {
+        "home": [
+            "*"
+        ],
+        "etc": [
+            "*"
+        ]
+    }
+}

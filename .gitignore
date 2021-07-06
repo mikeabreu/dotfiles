@@ -5,4 +5,5 @@ _bin
 _logs
 _home
 _etc
+.vscodeconfigs/
 .vscode

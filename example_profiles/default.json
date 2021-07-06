@@ -15,7 +15,6 @@
     ],
     "configs_home": [
         "default=.vimrc",
-        "default=.zshrc",
-        ".grc/default=grc.zsh"
+        "default=.zshrc"
     ]
 }
