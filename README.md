@@ -14,15 +14,14 @@ The dotfiles script is mainly four components:
 - lib/lib-installers.sh (Installers)
     - This is a library that handles installing software.
 
-This project was designed to serve my own purposes and mostly to learn bash in a greater depth. I don't aim to support anything or add additional installers that I don't use. However, you are welcome to fork this repository and add your own installers. Check out the "Adding your own installers" section.
+This project was designed to serve my own purposes and mostly to learn bash better. I don't aim to support anything or add additional installers that I don't use. However, you are welcome to fork this repository and add your own installers. Check out the "Adding your own installers" section.
 
-note these screenshots are from different runs of the program but show the full output, one from testuser with sudo rights and one as root.
 ![Example Usage 1](/screenshots/example_usage_1.png?raw=true "Example Usage 1")
 ![Example Usage 2](/screenshots/example_usage_2.png?raw=true "Example Usage 2")
 ![Example Usage 3](/screenshots/example_usage_3.png?raw=true "Example Usage 3")
 
 # Supported Operating Systems
-Although I don't support this software I generally have tested and designed it to work on most versions of the following operating systems:
+Although, I don't support this software I generally have tested and designed it to work on most versions of the following operating systems:
 - Ubuntu
 - Debian
 - macOS
