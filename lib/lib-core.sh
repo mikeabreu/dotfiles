@@ -24,19 +24,14 @@ declare VERBOSE=${VERBOSE:-false}
 declare DEBUG=${DEBUG:-false}
 declare LIBCORE_LOGS=${LIBCORE_LOGS:-""}
 #========================================================
-#   Public Global Variables
+#   Global Variables
 #========================================================
-#   Don't Change These
-#   These variables can be useful to query directly
 declare OPERATING_SYSTEM=${OPERATING_SYSTEM:-"Unknown"}
 declare OPERATING_SYSTEM_VERSION=${OPERATING_SYSTEM_VERSION:-"Unknown"}
 declare IS_PRIVILEGED=false
 declare IS_ROOT=false
 declare HAS_SUDO=false
 declare CAN_SUDO=false
-#========================================================
-#   Private Global Variables
-#========================================================
 declare _LOADED_LIB_CORE=true
 #========================================================
 #   Core Functions

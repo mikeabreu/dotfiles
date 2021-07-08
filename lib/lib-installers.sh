@@ -11,10 +11,6 @@
 #========================================================
 #   Global Variables    
 #========================================================
-
-#========================================================
-#   Private Global Variables
-#========================================================
 declare _LOADED_LIB_INSTALLERS=true
 declare _SYSTEM_PACKAGE_MANAGER_UPDATED=false
 #========================================================
@@ -286,6 +282,37 @@ function install_spaceship_theme {
     }
     display_bar
 }
+#========================================================
+#   Custom Installers       
+#========================================================
+function install_iterm2 {
+    [[ $OPERATING_SYSTEM != 'Darwin' ]] && {
+        # If not macOS just return 1 for false.
+        return 1
+    }
+    [[ -e "/Applications/iTerm.app" ]] && {
+        display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
+        return 0
+    }
+    display_bar
+    display_title "Installing iTerm2"
+    local download_link="$( curl https://iterm2.com/downloads.html 2>/dev/null  |
+        grep -oE '<a\s+(?:[^>]*?\s+)?href=(["])(.*?)\1'                             | 
+        grep "stable" | head -n1 | awk -F'"' '{print $2}')"
+    # alternative with pup
+    # local download_link="$( curl https://iterm2.com/downloads.html 2>/dev/null | pup 'a[href*="stable"] attr{href}' | head -n1)"
+    local filename="$(echo "$download_link" | awk -F'/' '{print $NF}')"
+    display_info "Download link is: $download_link"
+    prompt_user message="Do you wish to download this package and install it? [Y/n]: " \
+        warning_message="The download link was gathered by an html scrapper, verify it's the accurate." \
+        failure_message="You chose not to install iterm2 with the download link: $download_link" \
+        success_message="" error_message="" exit_on_failure=false
+    display_info "Downloading file from: $download_link"
+    curl "$download_link" > "$filename"
+    display_info "Unzipping: $filename into /Applications/"
+    unzip "$filename" -d "/Applications/"
+    return $?
+}
 function install_docker {
     # TODO: add macOS support
     # TODO: add Ubuntu/Debian support
@@ -324,37 +351,6 @@ function install_docker {
                 ;;
         esac
     fi
-}
-#========================================================
-#   Custom Installers       
-#========================================================
-function install_iterm2 {
-    [[ $OPERATING_SYSTEM != 'Darwin' ]] && {
-        # If not macOS just return 1 for false.
-        return 1
-    }
-    [[ -e "/Applications/iTerm.app" ]] && {
-        display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
-        return 0
-    }
-    display_bar
-    display_title "Installing iTerm2"
-    local download_link="$( curl https://iterm2.com/downloads.html 2>/dev/null  |
-        grep -oE '<a\s+(?:[^>]*?\s+)?href=(["])(.*?)\1'                             | 
-        grep "stable" | head -n1 | awk -F'"' '{print $2}')"
-    # alternative with pup
-    # local download_link="$( curl https://iterm2.com/downloads.html 2>/dev/null | pup 'a[href*="stable"] attr{href}' | head -n1)"
-    local filename="$(echo "$download_link" | awk -F'/' '{print $NF}')"
-    display_info "Download link is: $download_link"
-    prompt_user message="Do you wish to download this package and install it? [Y/n]: " \
-        warning_message="The download link was gathered by an html scrapper, verify it's the accurate." \
-        failure_message="You chose not to install iterm2 with the download link: $download_link" \
-        success_message="" error_message="" exit_on_failure=false
-    display_info "Downloading file from: $download_link"
-    curl "$download_link" > "$filename"
-    display_info "Unzipping: $filename into /Applications/"
-    unzip "$filename" -d "/Applications/"
-    return $?
 }
 #========================================================
 #   Main Execution / Initialization

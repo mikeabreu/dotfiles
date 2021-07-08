@@ -12,34 +12,26 @@
 #   Global Variables    
 #========================================================
 declare -A DOTFILES_PROFILE=()
-# Add new options in profile.json by adding them here.
 declare -A PROFILE_SCHEMA=(
     [NAME]="string"
     [SHELL]="string"
     [SHELL_FRAMEWORK]="string"
     [SHELL_THEME]="string"
     [SHELL_PLUGINS]="array"
+    [SYSTEM_FONT]="string"
     [SYSTEM_PACKAGES]="array"
     [CONFIGS_PATH]="array"
-    [CONFIGS_ETC]="array"
-    [CONFIGS_ETC_SYMLINK]="boolean"
     [CUSTOM_INSTALLERS]="array"
 )
 declare DOTFILES="${HOME}/dotfiles"
-# Add new directories here, leave off trailing '/'
 declare -A DOTFILES_DIRS=(
     [HOME]="${DOTFILES}/_home"
     [LOGS]="${DOTFILES}/_logs"
     [CONFIGS_PATH]="${DOTFILES}/example_configs/default/home"
-    [CONFIGS_ETC]="${DOTFILES}/example_configs/default/home"
     [PROFILES]="${DOTFILES}/example_profiles"
 )
 declare LIBCORE_LOGS="${DOTFILES_DIRS[LOGS]}"
-# Loaded profile otherwise default.json
 declare PROFILE_FILENAME="${PROFILE_FILENAME:-"${DOTFILES_DIRS[PROFILES]}/default.json"}"
-#========================================================
-#   Private Global Variables
-#========================================================
 declare _LOADED_LIB_CONFIGS=true
 #========================================================
 #   Core Functions
@@ -120,19 +112,8 @@ function install_profile {
         local _files=($( ls -A "${DOTFILES_DIRS[HOME]}" ))
         for _file in "${_files[@]}";do
             [[ $OPERATING_SYSTEM == "Darwin" ]] && {
-                    ls -lAh -G "${HOME}/${_file}"
+                    ls -lAhG "${HOME}/${_file}"
             } || {  ls -lAh --color=always "${HOME}/${_file}"; }
-        done
-    }
-    [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC]}" ]] && {
-        # GNU STOW _etc to /etc/
-        display_title "GNU Stowing '${DOTFILES_DIRS[HOME]}/_etc' to '/etc'"
-        stow -t "/etc/" "_etc/"
-        local _files=($( ls -A "${DOTFILES_DIRS[ETC]}" ))
-        for _file in "${_files[@]}";do
-            [[ $OPERATING_SYSTEM == "Darwin" ]] && {            
-                    /bin/ls -lAhG "/etc/${_file}"
-            } || {  /bin/ls -lAh --color=always "/etc/${_file}"; }
         done
     }
     display_bar
@@ -160,6 +141,10 @@ function display_profile {
             display_message "\t${CLGREEN}PLUGIN:${CE} ${CWHITE}\t${plugin}"
         done
     }
+    # System Font
+    # [[ -n "${DOTFILES_PROFILE[SYSTEM_FONT]}" ]] && {
+    #     display_message "${CLGREEN}SYSTEM_PACKAGES:${CE}"
+    # }
     # System Packages
     [[ -n "${DOTFILES_PROFILE[SYSTEM_PACKAGES]}" ]] && {
         display_message "${CLGREEN}SYSTEM_PACKAGES:${CE}"
@@ -169,21 +154,7 @@ function display_profile {
     }
     # Configs: Home
     [[ -n "${DOTFILES_PROFILE[CONFIGS_PATH]}" ]] && {
-        display_message "${CLGREEN}CONFIGS_PATH:${CE}"
-        for config in ${DOTFILES_PROFILE[CONFIGS_PATH]}; do
-            display_message "\t${CLGREEN}CONFIG:${CE} ${CWHITE}\t${config}"
-        done
-    }
-    # Configs: etc
-    [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC]}" ]] && {
-        display_message "${CLGREEN}CONFIGS_ETC:${CE}"
-        for config in ${DOTFILES_PROFILE[CONFIGS_ETC]}; do
-            display_message "\t${CLGREEN}CONFIG:${CE} ${CWHITE}\t${config}"
-        done
-    }
-    # Configs: etc_symlink
-    [[ -n "${DOTFILES_PROFILE[CONFIGS_ETC_SYMLINK]}" ]] && {
-        display_message "${CLGREEN}CONFIGS_ETC_SYMLINK:${CE} ${CWHITE} ${DOTFILES_PROFILE[CONFIGS_ETC_SYMLINK]}"
+        display_message "${CLGREEN}CONFIGS_PATH:${CE} ${CWHITE}\t\t${DOTFILES_PROFILE[CONFIGS_PATH]}"
     }
     # Custom Installers
     [[ -n "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" ]] && {
@@ -198,7 +169,7 @@ function display_profile {
 #   Configuration/Setup Functions
 #========================================================
 function setup_profile_data {
-    # Reads profile.json and creates an assoc array, DOTFILES_PROFILE, with all found key/values
+    # Reads a profile.json file and creates an assoc array, DOTFILES_PROFILE, with all found key/values
     local profile_file="$1"
     [[ ! -r "$profile_file" ]] && display_error "Cannot read profile file: $profile_file" && exit 1
     [[ $DEBUG == true ]] && display_debug "Determing profile variables from file or default."
@@ -213,6 +184,7 @@ function setup_profile_data {
     done
 }
 function setup_var_data {
+    # function that handles the mapping of key/values from profile.json into DOTFILES_PROFILE
     local varname="$1"
     local data_type="${2:-"string"}"
     local profile_file="$3"
@@ -245,111 +217,6 @@ function setup_var_data {
                     display_debug "Invalid type passed to setup_var_data: $data_type for varname: $varname"
                 return 1 ;;
     esac
-}
-function setup_configs {
-    # handle associative arguments
-    local -A _args
-    for _arg in "$@";do
-        local key="$( echo "$_arg" | cut -f1 -d= )"
-        local value="$( echo "$_arg" | cut -f2 -d= )"
-        _args+=([$key]="$value")
-    done
-    # setup variables from args
-    local name="${_args[name]:-""}"
-    local config_dir="${_args[config_dir]:-""}"
-    local target_dir="${_args[target_dir]:-""}"
-    local -A configs=()
-    local -A tags=()
-    # display title and setup dirty config_files
-    case "$name" in
-        HOME)   display_title "Copying files from example_configs/default/home into _home/"
-                local -a _configs=($( echo "${DOTFILES_PROFILE[CONFIGS_PATH]}" )) ;;
-        ETC)    display_title "Copying files from configs/etc into _etc/"
-                local -a _configs=($( echo "${DOTFILES_PROFILE[CONFIGS_ETC]}" )) ;;
-        *)      display_error "Bad configs: $name" && exit 1 ;;
-    esac
-    # Clean config strings into configs[filename]="path" and tags[filename]="tag"
-    for _config in "${_configs[@]}";do
-        # Attempt to get the filename without the tag | 'tag=filename' or 'path/tag=filename'
-        # Empty if no tag is there.
-        local _filename="$( echo $_config   | 
-            awk -F'=' '{$1 = ""; print $0}' | 
-            sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
-        [[ -z "$_filename" ]] && {
-            # file doesnt have a tag. Set _filename to raw filename
-            local _filename="$_config"
-            local _tag=""
-        } || {
-            # file has a tag, grab it
-            local _tag="$( echo $_config    | 
-                awk -F'=' '{print $1}'      | 
-                awk -F'/' '{print $NF}'     | 
-                sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' )"
-        }
-        # Determine if file has a path
-        [[ "$_config" == *"/"* ]] && {
-            # file has a path
-            [[ "${_config: -1}" == '/' ]] && {
-                # file has '/' as ending character, ignore it
-                local __config="${_config::-1}"
-                local _path="${__config%/*}"
-            } || {
-                # file doesnt have '/' as ending character
-                local _path="${_config%/*}"
-            }
-        } || {
-            # file doesnt have a path
-            local _path=""
-        }
-        # Setup clean configs_file with key=filename value=path
-        configs[$_filename]="$_path"
-        # Setup clean tags with key=filename value=tag
-        tags[$_filename]="$_tag"
-    done
-    # Copy over cleaned config files to target_dir
-    for _filename in "${!configs[@]}";do
-        [[ -n "${configs[$_filename]}" ]] && {
-            # file has a path
-            local target_path="${target_dir}/${configs[$_filename]}/$_filename"
-            [[ ! -e "${target_dir}/${configs[$_filename]}" ]] && {
-                # Create the file path in _home for files to be copied to
-                mkdir -p "${target_dir}/${configs[$_filename]}"
-            }
-            [[ $VERBOSE == true ]] && display_info "Filename: $_filename"
-            [[ -n "${tags[$_filename]}" ]] && {
-                # file has a tag
-                [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$_filename]}"
-                local src_path="${config_dir}/${configs[$_filename]}/${tags[$_filename]}=${_filename}"
-                [[ -e "$src_path" ]] && {
-                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Config file doesnt exist: $src_path"; exit 1; }
-            } || {  
-                # file doesnt have a tag
-                local src_path="${config_dir}/${configs[$_filename]}/${_filename}"
-                [[ -e "$src_path" ]] && {
-                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Config file doesnt exist: $src_path"; exit 1; }
-            }
-        } || {
-            # file doesnt have a path
-            local target_path="${target_dir}/$_filename"
-            [[ $VERBOSE == true ]] && display_info "Filename: $_filename"
-            [[ -n "${tags[$_filename]}" ]] && {
-                # file has a tag
-                [[ $VERBOSE == true ]] && display_info "Tag: ${tags[$_filename]}"
-                local src_path="${config_dir}/${tags[$_filename]}=${_filename}"
-                [[ -e "$src_path" ]] && {
-                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Config file doesnt exist: $src_path"; exit 1; }
-            } || {  
-                # file doesnt have a tag
-                local src_path="${config_dir}/${config}"
-                [[ -e "$src_path" ]] && {
-                    safe_copy "$src_path" "$target_path" "${DOTFILES_DIRS[BACKUP]}"
-                } || { display_error "Config file doesnt exist: $src_path"; exit 1; }
-            }
-        }
-    done
 }
 #========================================================
 #   Main Execution / Initialization

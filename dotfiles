@@ -188,7 +188,7 @@ function main {
 #========================================================
 ! check_bash_version && {
     # 4.3 or lower bash
-    main "$@"
+    main "$@" | tee -a "${DOTFILES_LOGS}/before_prereq-install_logfile"
 } || {
     # 4.4+ bash
     main "$@" | logfile "${DOTFILES_LOGS}/dotfiles_installation_logfile"
