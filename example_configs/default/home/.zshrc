@@ -1,6 +1,7 @@
 # -----------------------------------------------
 # Set/Unset Variables
 # -----------------------------------------------
+# This is being unset for compatability with multiple users running this theme
 unset SPACESHIP_ROOT
 # -----------------------------------------------
 # Environment Variables
@@ -11,7 +12,6 @@ export GOBIN="${GOPATH}/bin"
 export PATH="${PATH}:${HOME}/bin:${GOBIN}"
 export ZSH="${HOME}/.oh-my-zsh"
 export TERM="xterm-256color"
-
 # -----------------------------------------------
 # Oh My ZSH Configuration
 # -----------------------------------------------
@@ -34,15 +34,14 @@ alias ...="cd ../.."
 alias ....="cd ../../.."
 alias .....="cd ../../../.."
 alias lk="ls -lah *"
-alias ll="ls -lh $@"
-alias l="ls -lah $@"
+alias ll="ls -lh"
+alias l="ls -lah"
 alias cp="cp -av"
 alias mv="mv -vf"
-alias mkdir="/bin/mkdir -pv"
+alias mkdir="mkdir -pv"
 alias sudo='sudo '
 
-alias ports="netstat -pantu"
-alias ipconfig="ifconfig $@"
+alias ipconfig="ifconfig"
 alias gipv4="grep -oE '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'"
 alias gipv4r="grep -oE '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/[0-9][0-9]?'"
 alias sipv4="sort -n -u -t . -k 1,1 -k 2,2 -k 3,3 -k 4,4"
@@ -69,27 +68,30 @@ alias wgetasie8='wget -U "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Tri
 # -----------------------------------------------
 # Functions
 # -----------------------------------------------
-function ipx() {
+function ports {
+    echo -e "\033[38;5;50mListening ports:\033[0m"
+    [[ $(uname -a | awk '{print $1}') == "Darwin" ]] && {
+        # macOS port check
+        sudo lsof -i -P | grep -i "listen"
+    } || {
+        # Non-macOS port check
+        sudo netstat -pantul | grep "LISTEN"
+    }
+}
+function ipx {
     if [ -z $1 ]; then
         curl "ipinfo.io"
     else
         curl "ipinfo.io/${@}"
     fi
 }
-function get_external_ip() {
+function get_external_ip {
     echo -en "Method 0\tipinfo.io\t";curl -s http://ipinfo.io/ip
     echo -en "Method 1\tdns lookup\t";dig +short @resolver1.opendns.com myip.opendns.com
     echo -en "Method 2\tdns lookup\t";dig +short @208.67.222.222 myip.opendns.com
 }
-function crt_subdomains() { curl -s https://crt.sh\?q\=%25.$1 | awk -v pattern="<TD>.*$1" '$0 ~ pattern {gsub("<[^>]*>","");gsub(//,""); print}' | sort -u }
-function crt_certs() { curl -s https://crt.sh\?q\=%25.$1 | awk '/\?id=[0-9]*/{nr[NR]; nr[NR+1]; nr[NR+3]; nr[NR+4]}; NR in nr' | sed 's/<TD style="text-align:center"><A href="?id=//g' | sed 's#">[0-9]*</A></TD>##g' | sed 's#<TD style="text-align:center">##g' | sed 's#</TD>##g' | sed 's#<TD>##g' | sed 's#<A style=["a-z: ?=0-9-]*>##g' | sed 's#</A>##g' | sed 'N;N;N;s/\n/\t\t/g' }
-function crt_toCSV() {
-    echo 'ID,Logged At,Identity,Issuer Name' > $1.csv
-    curl -s https://crt.sh\?q\=%25.$1 | awk '/\?id=[0-9]*/{nr[NR]; nr[NR+1]; nr[NR+3]; nr[NR+4]}; NR in nr' | sed 's/<TD style="text-align:center"><A href="?id=//g' | sed 's#">[0-9]*</A></TD>##g' | sed 's#<TD style="text-align:center">##g' | sed 's#</TD>##g' | sed 's#<TD>##g' | sed 's#<A style=["a-z: ?=0-9-]*>##g' | sed 's#</A>##g' | sed 's/,/;/g' | sed 'N;N;N;s/\n/,/g' | sed 's/,[ ]*/,/g' | sed 's/^[ ]*//g' >> $1.csv
-}
-function checksums() { echo -n "md5: ";md5sum "${@}";echo -n "sha1: ";sha1sum "${@}";echo -n "sha256: ";sha256sum "${@}";echo -n "sha512: ";sha512sum "${@}"; }
-function mount_vmshare() { vmhgfs-fuse .host:/ /mnt/host }
-function docker_clean() {
+function checksums { echo -n "md5: ";md5sum "${@}";echo -n "sha1: ";sha1sum "${@}";echo -n "sha256: ";sha256sum "${@}";echo -n "sha512: ";sha512sum "${@}"; }
+function docker_clean {
     for exited_container in $(docker ps -a | grep "Exited" | awk '{print $1}'); do
         echo -n "Removing docker container: "
         docker rm $exited_container
