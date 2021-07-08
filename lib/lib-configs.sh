@@ -104,12 +104,18 @@ function install_profile {
     }
     ## GNU Stow Linking
     [[ -n "${DOTFILES_PROFILE[CONFIGS_PATH]}" ]] && {
+        local _files=($(/bin/ls -A "${DOTFILES_DIRS[HOME]}" ))
+        for _file in "${_files[@]}";do
+            # Check each file and prompt to remove existing files.
+            [[ ! -h ~/$_file ]] && {
+                display_warning "File exists and isn't a symlink:" "${HOME}/$_file"
+                display_info "Moving file:" "${HOME}/$_file -> ${HOME}/${_file}.bkp"
+                mv -v ${HOME}/$_file ${HOME}/${_file}.bkp
+            }
+        done
         # GNU STOW _home to ~/
-        display_title "GNU Stowing '${DOTFILES_PROFILE[CONFIGS_PATH]}' to '${HOME}'"
+        display_title "Symlinking '${DOTFILES_DIRS[HOME]}' -> '${HOME}'"
         stow -t "${HOME}" "_home"
-        # display_info "Displaying contents of:" "${HOME}"
-        # ls -lah ${HOME}
-        local _files=($( ls -A "${DOTFILES_DIRS[HOME]}" ))
         for _file in "${_files[@]}";do
             [[ $OPERATING_SYSTEM == "Darwin" ]] && {
                     ls -lAhG "${HOME}/${_file}"
@@ -154,9 +160,9 @@ function display_profile {
     }
     # Custom Installers
     [[ -n "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" ]] && {
-        display_message "${CLGREEN}TOOLS:${CE}"
+        display_message "${CLGREEN}CUSTOM_INSTALLERS:${CE}"
         for installer in ${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}; do
-            display_message "\t${CLGREEN}- Installer:${CE} ${CWHITE} ${installer}"
+            display_message "${CLGREEN}- INSTALLER:${CE} ${CWHITE}\t\t${installer}"
         done
     }
     display_bar
