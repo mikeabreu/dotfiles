@@ -11,7 +11,8 @@
         "vim",
         "git",
         "tmux",
-        "grc"
+        "grc",
+	"net-tools"
     ],
     "configs_path": "example_configs/default/home"
 }

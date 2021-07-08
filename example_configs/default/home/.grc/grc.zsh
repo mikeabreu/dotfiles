@@ -79,7 +79,7 @@ if [[ "$TERM" != dumb ]] && (( $+commands[grc] )) ; then
       [[ $GRC_DEBUG == true ]] && {
         echo -e "remapping command for color: [alias \e[38;5;226m${cmd}\e[0m=\"grc --colour=auto ${cmd}\"], run [\e[38;5;1munset ${cmd}\e[0m] to remove alias."
       }
-      alias $cmd="grc --colour=auto $cmd"
+      alias $cmd="grc --colour=on $cmd"
     fi
   done
 
