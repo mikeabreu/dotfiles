@@ -213,8 +213,8 @@ function install_custom_installers {
         case "$installer" in
             # ADD CUSTOM INSTALLERS HERE
             iterm2)         install_iterm2 ;;
-            amix/vimrc)     install_amix_vimrc ;;
-            firacode)       install_firacode ;;
+            amix/vimrc)     install_amix_vimrc "${dotfiles_root_dir}/_home" ;;
+            firacode)       install_firacode "${dotfiles_root_dir}/_home";;
             # Catch All
             *)  display_warning "LIB-INSTALLERS: No installer found for custom install:" "$installer"; display_bar ;;
         esac
@@ -289,7 +289,7 @@ function install_spaceship_theme {
 function install_firacode {
     local dotfiles_home=$1
     [[ $OPERATING_SYSTEM == 'Darwin' ]] && {
-        display_warning "install firacode manually at https://github.com/tonsky/FiraCode/tree/master/distr/ttf."
+        display_warning "Install firacode manually at https://github.com/tonsky/FiraCode/tree/master/distr/ttf."
         return 0
     }
     display_info "Installing firacode"

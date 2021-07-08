@@ -156,6 +156,7 @@ function main {
     install_profile "$PROFILE_FILENAME"
     display_success "All done setting up the terminal. There might be manual actions to perform with your profile. You'll want to double check this."
     display_warning "Recommended: Start a new terminal instead of continuing from the installation one."
+    display_warning "You might get prompted to run 'compaudit | xargs chmod g-w,o-w' which is a good idea to run it if you do."
     $(which ${DOTFILES_PROFILE[SHELL]})
 }
 #========================================================
