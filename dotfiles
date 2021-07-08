@@ -102,6 +102,7 @@ function main {
     declare REQUIRE_PRIVILEGE=true
     [[ $VERBOSE == true ]] && local verbose_arg="-v"
     [[ $DEBUG == true ]] && local debug_arg="-d"
+    [[ $SKIP_PROMPTS == true ]] && local skip_prompt_arg="-y"
     if [[ $INSTALL_DEPENDENCIES == true ]];then
         # Introduction Message
         introduction_message
@@ -140,7 +141,7 @@ function main {
     ! check_bash_version && {
         # Attempting to restart bash shell to load 4.4+ bash
         display_warning "Bash 4.4 is required, attempting to restart to use new bash version from installing dependencies."
-        ./dotfiles $verbose_arg $debug_arg -sp ${PROFILE_FILENAME}
+        ./dotfiles $verbose_arg $debug_arg $skip_prompt_arg -sp ${PROFILE_FILENAME}
         exit 0
     }
     # Loaded here because it requires bash 4.4+

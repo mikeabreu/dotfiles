@@ -16,6 +16,7 @@
     ],
     "custom_installers": [
         "amix/vimrc",
-        "firacode"
+        "firacode",
+        "iterm2"
     ]
 }

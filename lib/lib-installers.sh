@@ -214,6 +214,7 @@ function install_custom_installers {
             # ADD CUSTOM INSTALLERS HERE
             iterm2)         install_iterm2 ;;
             amix/vimrc)     install_amix_vimrc ;;
+            firacode)       install_firacode ;;
             # Catch All
             *)  display_warning "LIB-INSTALLERS: No installer found for custom install:" "$installer"; display_bar ;;
         esac
@@ -303,6 +304,7 @@ function install_amix_vimrc {
 function install_iterm2 {
     [[ $OPERATING_SYSTEM != 'Darwin' ]] && {
         # If not macOS just return 1 for false.
+        display_warning "Not macOS operating system so skipping installation."
         return 1
     }
     [[ -e "/Applications/iTerm.app" ]] && {
