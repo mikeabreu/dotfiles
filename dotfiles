@@ -186,4 +186,10 @@ function main {
 #========================================================
 #   Main Execution
 #========================================================
-main "$@" | logfile "${DOTFILES_LOGS}/dotfiles_installation_logfile"
+! check_bash_version && {
+    # 4.3 or lower bash
+    main "$@"
+} || {
+    # 4.4+ bash
+    main "$@" | logfile "${DOTFILES_LOGS}/dotfiles_installation_logfile"
+}
