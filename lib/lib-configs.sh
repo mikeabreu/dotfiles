@@ -97,16 +97,15 @@ function install_profile {
         # setup_configs name="HOME" \
         #     config_dir="${DOTFILES_PROFILE[CONFIGS_PATH]}" \
         #     target_dir="${DOTFILES_DIRS[HOME]}"
+        local _files=($(/bin/ls -A "${DOTFILES_DIRS[HOME]}" ))
+        display_title "Copying configuration files to ${DOTFILES_DIRS[HOME]} and then symlinking to ${HOME}/"
+        # Copy files from profile to _home
         display_info "Copying files" "${DOTFILES_PROFILE[CONFIGS_PATH]} -> ${DOTFILES_DIRS[HOME]}"
         cp -vr "${DOTFILES_PROFILE[CONFIGS_PATH]}/." "${DOTFILES_DIRS[HOME]}"
         display_info "Displaying contents of:" "${DOTFILES_DIRS[HOME]}"
         ls -lah ${DOTFILES_DIRS[HOME]}
-    }
-    ## GNU Stow Linking
-    [[ -n "${DOTFILES_PROFILE[CONFIGS_PATH]}" ]] && {
-        local _files=($(/bin/ls -A "${DOTFILES_DIRS[HOME]}" ))
+        # Check each file in _home against ~/ and backup anything found in ~/.
         for _file in "${_files[@]}";do
-            # Check each file and prompt to remove existing files.
             [[ ! -h ~/$_file ]] && {
                 display_warning "File exists and isn't a symlink:" "${HOME}/$_file"
                 display_info "Moving file:" "${HOME}/$_file -> ${HOME}/${_file}.bkp"
@@ -114,8 +113,10 @@ function install_profile {
             }
         done
         # GNU STOW _home to ~/
-        display_title "Symlinking '${DOTFILES_DIRS[HOME]}' -> '${HOME}'"
+        display_info "Symlinking:" "${DOTFILES_DIRS[HOME]} -> ${HOME}'"
         stow -t "${HOME}" "_home"
+        # Display linked files/folders in ~/
+        display_info "Displaying symlinks in:" "${HOME}"
         for _file in "${_files[@]}";do
             [[ $OPERATING_SYSTEM == "Darwin" ]] && {
                     ls -lAhG "${HOME}/${_file}"
@@ -130,6 +131,10 @@ function display_profile {
     # Name
     display_message "${CLGREEN}PROFILE_NAME:${CE} ${CWHITE}\t\t${DOTFILES_PROFILE[NAME]}"
     display_bar
+    # Configs Path
+    [[ -n "${DOTFILES_PROFILE[CONFIGS_PATH]}" ]] && {
+        display_message "${CLGREEN}CONFIGS_PATH:${CE} ${CWHITE}\t\t${DOTFILES_PROFILE[CONFIGS_PATH]}"
+    }
     # Shell
     display_message "${CLGREEN}SHELL:${CE} ${CWHITE}\t\t\t${DOTFILES_PROFILE[SHELL]}"
     # Shell Framework
@@ -154,15 +159,11 @@ function display_profile {
             display_message "\t${CLGREEN}PACKAGE:${CE} ${CWHITE}\t${package}"
         done
     }
-    # Configs: Home
-    [[ -n "${DOTFILES_PROFILE[CONFIGS_PATH]}" ]] && {
-        display_message "${CLGREEN}CONFIGS_PATH:${CE} ${CWHITE}\t\t${DOTFILES_PROFILE[CONFIGS_PATH]}"
-    }
     # Custom Installers
     [[ -n "${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}" ]] && {
         display_message "${CLGREEN}CUSTOM_INSTALLERS:${CE}"
         for installer in ${DOTFILES_PROFILE[CUSTOM_INSTALLERS]}; do
-            display_message "${CLGREEN}- INSTALLER:${CE} ${CWHITE}\t\t${installer}"
+            display_message "\t${CLGREEN}INSTALLER:${CE} ${CWHITE}\t${installer}"
         done
     }
     display_bar

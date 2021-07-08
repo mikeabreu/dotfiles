@@ -24,9 +24,17 @@ function update_system_package {
         *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
     esac
 }
+function dpkg_check {
+    [[ $OPERATING_SYSTEM == 'Ubuntu' ]] ||
+    [[ $OPERATING_SYSTEM == 'Debian' ]] && {
+        dpkg -l | grep -i " $1 " &>/dev/null
+    }
+    
+}
 function install_system_package {
     local package_name="$1"
-    command_exists $package_name && {
+    command_exists $package_name ||
+    dpkg_check $package_name && {
         display_warning "Skipping: System Package is already installed:" "$package_name"
         return 0
     }
@@ -290,25 +298,37 @@ function install_firacode {
     local dotfiles_home=$1
     [[ $OPERATING_SYSTEM == 'Darwin' ]] && {
         display_warning "Install firacode manually at https://github.com/tonsky/FiraCode/tree/master/distr/ttf."
+        display_bar
         return 0
     }
-    display_info "Installing firacode"
-    install_system_package "fonts-firacode"
+    ! dpkg_check "fonts-firacode" && {
+        display_info "Installing:" "firacode"
+        install_system_package "fonts-firacode"
+    } || {
+        display_warning "Skipping: Custom Installer is already installed:" "fonts-firacode"
+    }
+    display_bar
 }
 function install_amix_vimrc {
     local dotfiles_home=$1
-    display_info "Installing amix/vimrc"
-    git clone --depth=1 https://github.com/amix/vimrc.git "${dotfiles_home}/.vim_runtime"
+    [[ ! -d "${dotfiles_home}/.vim_runtime" ]] && {
+        display_info "Installing:" "amix/vimrc"
+        git clone --depth=1 https://github.com/amix/vimrc.git "${dotfiles_home}/.vim_runtime" 2>/dev/null
+    } || {
+        display_warning "Skipping: Custom Installer already installed:" "amix/vimrc"
+    }
     display_bar
 }
 function install_iterm2 {
     [[ $OPERATING_SYSTEM != 'Darwin' ]] && {
         # If not macOS just return 1 for false.
-        display_warning "Not macOS operating system so skipping installation."
+        display_warning "Skipping: Custom Installer is not valid for operating system:" "iterm2"
+        display_bar
         return 1
     }
     [[ -e "/Applications/iTerm.app" ]] && {
         display_warning "Skipping: iTerm2 is already installed in /Applications/iTerm2.app"
+        display_bar
         return 0
     }
     display_bar
@@ -328,6 +348,7 @@ function install_iterm2 {
     curl "$download_link" > "$filename"
     display_info "Unzipping: $filename into /Applications/"
     unzip "$filename" -d "/Applications/"
+    display_bar
     return $?
 }
 function install_docker {
