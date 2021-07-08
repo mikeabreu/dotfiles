@@ -1,5 +1,6 @@
 {
     "name": "default",
+    "configs_path": "example_configs/default/home",
     "shell": "zsh",
     "shell_framework": "oh-my-zsh",
     "shell_theme": "spaceship-prompt",
@@ -13,5 +14,8 @@
         "tmux",
         "grc"
     ],
-    "configs_path": "example_configs/default/home"
+    "custom_installers": [
+        "amix/vimrc",
+        "firacode"
+    ]
 }

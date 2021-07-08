@@ -268,33 +268,6 @@ function check_bash_version {
     # Return false if lower version than 4.4
     return 1
 }
-function logfile {
-    local file="$1"
-    while true ; do
-        [[ $OPERATING_SYSTEM == "Darwin" ]] && {
-            # macOS
-            read -r -s -t 0.1 -s holder
-        } || {
-            # Default
-            read -r -s -t 0.1 -s holder
-        }
-        local result="$?"
-        local line="$holder"
-        [[ "$result" -eq 0 || "$result" -eq 142  ]] && {
-            [[ -n "$line" ]] && {
-                # Display the line to stdout with color.
-                [[ "$result" -eq 0   ]] && echo -e "$line"
-                [[ "$result" -eq 142 ]] && echo -ne "$line"
-                # Log the information to the logfile without color.
-                echo "$line" | remove_color >> $file
-            }
-            [[ $FULL_DEBUG == true ]] && display_debug "Logfile result:[${result}]"
-            continue
-        }
-        [[ $FULL_DEBUG == true ]] && display_debug "Logfile result:[${result}]"
-        break
-    done
-}
 #========================================================
 #   Trap Handlers
 #========================================================
@@ -324,21 +297,6 @@ add_terminal_colors
     }
     [[ $ENABLE_TRAP_HANDLERS == true ]] && trap sigint_handler SIGINT
     [[ $ENABLE_TRAP_HANDLERS == true ]] && trap exit_handler EXIT
-    [[ -n "$LIBCORE_LOGS" ]] && {
-        # if logs folder isnt ""
-        [[ ! -d "$LIBCORE_LOGS" ]] && {
-            # if logs folder isn't a directory
-            [[ -e "$LIBCORE_LOGS" ]] && {
-                # and the logs folder exists, its a blocking file
-                display_warning "Removing blocking file for: $LIBCORE_LOGS"
-                backup_file "$LIBCORE_LOGS"
-                rm -fr "$LIBCORE_LOGS"
-            }
-            # Make the logs folder
-            display_info "Making log folder:" "$LIBCORE_LOGS"
-            mkdir -p "$LIBCORE_LOGS"
-        }
-    }
     check_operating_system
     check_privileges
 }

@@ -207,17 +207,16 @@ function install_custom_installers {
     # dotfiles_root_dir="${HOME}/dotfiles"
     local installers=($(echo "$1"))
     local dotfiles_root_dir="$2"
-    display_bar
     display_title "Installing Custom Installers"
+    display_bar
     for installer in "${installers[@]}"; do
         case "$installer" in
             # ADD CUSTOM INSTALLERS HERE
             iterm2)     install_iterm2 ;;
             # Catch All
-            *)  display_warning "LIB-INSTALLERS: No installer found for custom install:" "$installer";;
+            *)  display_warning "LIB-INSTALLERS: No installer found for custom install:" "$installer"; display_bar ;;
         esac
     done
-    display_bar
 }
 function install_system_packages {
     # packages comes from profile.json 'SYSTEM_PACKAGES'

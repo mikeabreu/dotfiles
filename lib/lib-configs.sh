@@ -5,7 +5,10 @@
 #========================================================
 # Prevent duplicate sourcing
 [[ $_LOADED_LIB_CONFIGS == true ]] && {
-    [[ $DEBUG == true ]] && display_debug "Skipping: Duplicate source attempt on lib-dotfiles.sh."
+    [[ $DEBUG == true ]] && display_debug "Skipping: Duplicate source attempt on lib-configs.sh."
+    return 0
+}
+! check_bash_version && {
     return 0
 }
 #========================================================
@@ -18,7 +21,6 @@ declare -A PROFILE_SCHEMA=(
     [SHELL_FRAMEWORK]="string"
     [SHELL_THEME]="string"
     [SHELL_PLUGINS]="array"
-    [SYSTEM_FONT]="string"
     [SYSTEM_PACKAGES]="array"
     [CONFIGS_PATH]="array"
     [CUSTOM_INSTALLERS]="array"
@@ -26,11 +28,9 @@ declare -A PROFILE_SCHEMA=(
 declare DOTFILES="${HOME}/dotfiles"
 declare -A DOTFILES_DIRS=(
     [HOME]="${DOTFILES}/_home"
-    [LOGS]="${DOTFILES}/_logs"
     [CONFIGS_PATH]="${DOTFILES}/example_configs/default/home"
     [PROFILES]="${DOTFILES}/example_profiles"
 )
-declare LIBCORE_LOGS="${DOTFILES_DIRS[LOGS]}"
 declare PROFILE_FILENAME="${PROFILE_FILENAME:-"${DOTFILES_DIRS[PROFILES]}/default.json"}"
 declare _LOADED_LIB_CONFIGS=true
 #========================================================
@@ -49,10 +49,8 @@ function load_profile {
     for _dir in "${!DOTFILES_DIRS[@]}";do
         [[ ! -d "${DOTFILES_DIRS[${_dir}]}" ]] && {
             [[ -e "${DOTFILES_DIRS[${_dir}]}" ]] && { 
-                [[ $DEBUG == true ]] && display_debug "Removing blocking file for '${_dir}' dir."
-                backup_file "${DOTFILES_DIRS[${_dir}]}"
-                rm -fr "${DOTFILES_DIRS[${_dir}]}"
-                mkdir -p "${DOTFILES_DIRS[${_dir}]}" 
+                display_error "Blocking folder:" "${_dir}"
+                exit 1;
             } || { mkdir "${DOTFILES_DIRS[${_dir}]}"; }
         }
     done
@@ -141,10 +139,6 @@ function display_profile {
             display_message "\t${CLGREEN}PLUGIN:${CE} ${CWHITE}\t${plugin}"
         done
     }
-    # System Font
-    # [[ -n "${DOTFILES_PROFILE[SYSTEM_FONT]}" ]] && {
-    #     display_message "${CLGREEN}SYSTEM_PACKAGES:${CE}"
-    # }
     # System Packages
     [[ -n "${DOTFILES_PROFILE[SYSTEM_PACKAGES]}" ]] && {
         display_message "${CLGREEN}SYSTEM_PACKAGES:${CE}"
@@ -221,5 +215,5 @@ function setup_var_data {
 #========================================================
 #   Main Execution / Initialization
 #========================================================
-[[ $DEBUG == true ]] && display_debug "LIB-DOTFILES: Loaded lib-dotfiles.sh file"
+[[ $DEBUG == true ]] && display_debug "LIB-CONFIGS: Loaded lib-configs.sh file"
 return 0

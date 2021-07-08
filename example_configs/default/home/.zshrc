@@ -33,7 +33,6 @@ alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
 alias .....="cd ../../../.."
-alias ls='ls -G'
 alias lk="ls -lah *"
 alias ll="ls -lh $@"
 alias l="ls -lah $@"
@@ -70,31 +69,48 @@ alias wgetasie8='wget -U "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Tri
 # -----------------------------------------------
 # Functions
 # -----------------------------------------------
-ipx() {
+function ipx() {
     if [ -z $1 ]; then
         curl "ipinfo.io"
     else
         curl "ipinfo.io/${@}"
     fi
 }
-get_external_ip() {
+function get_external_ip() {
     echo -en "Method 0\tipinfo.io\t";curl -s http://ipinfo.io/ip
     echo -en "Method 1\tdns lookup\t";dig +short @resolver1.opendns.com myip.opendns.com
     echo -en "Method 2\tdns lookup\t";dig +short @208.67.222.222 myip.opendns.com
 }
-crt_subdomains() { curl -s https://crt.sh\?q\=%25.$1 | awk -v pattern="<TD>.*$1" '$0 ~ pattern {gsub("<[^>]*>","");gsub(//,""); print}' | sort -u }
-crt_certs() { curl -s https://crt.sh\?q\=%25.$1 | awk '/\?id=[0-9]*/{nr[NR]; nr[NR+1]; nr[NR+3]; nr[NR+4]}; NR in nr' | sed 's/<TD style="text-align:center"><A href="?id=//g' | sed 's#">[0-9]*</A></TD>##g' | sed 's#<TD style="text-align:center">##g' | sed 's#</TD>##g' | sed 's#<TD>##g' | sed 's#<A style=["a-z: ?=0-9-]*>##g' | sed 's#</A>##g' | sed 'N;N;N;s/\n/\t\t/g' }
-crt_toCSV() {
+function crt_subdomains() { curl -s https://crt.sh\?q\=%25.$1 | awk -v pattern="<TD>.*$1" '$0 ~ pattern {gsub("<[^>]*>","");gsub(//,""); print}' | sort -u }
+function crt_certs() { curl -s https://crt.sh\?q\=%25.$1 | awk '/\?id=[0-9]*/{nr[NR]; nr[NR+1]; nr[NR+3]; nr[NR+4]}; NR in nr' | sed 's/<TD style="text-align:center"><A href="?id=//g' | sed 's#">[0-9]*</A></TD>##g' | sed 's#<TD style="text-align:center">##g' | sed 's#</TD>##g' | sed 's#<TD>##g' | sed 's#<A style=["a-z: ?=0-9-]*>##g' | sed 's#</A>##g' | sed 'N;N;N;s/\n/\t\t/g' }
+function crt_toCSV() {
     echo 'ID,Logged At,Identity,Issuer Name' > $1.csv
     curl -s https://crt.sh\?q\=%25.$1 | awk '/\?id=[0-9]*/{nr[NR]; nr[NR+1]; nr[NR+3]; nr[NR+4]}; NR in nr' | sed 's/<TD style="text-align:center"><A href="?id=//g' | sed 's#">[0-9]*</A></TD>##g' | sed 's#<TD style="text-align:center">##g' | sed 's#</TD>##g' | sed 's#<TD>##g' | sed 's#<A style=["a-z: ?=0-9-]*>##g' | sed 's#</A>##g' | sed 's/,/;/g' | sed 'N;N;N;s/\n/,/g' | sed 's/,[ ]*/,/g' | sed 's/^[ ]*//g' >> $1.csv
 }
-checksums() { echo -n "md5: ";md5sum "${@}";echo -n "sha1: ";sha1sum "${@}";echo -n "sha256: ";sha256sum "${@}";echo -n "sha512: ";sha512sum "${@}"; }
-mount_vmshare() { vmhgfs-fuse .host:/ /mnt/host }
-docker_clean() {
+function checksums() { echo -n "md5: ";md5sum "${@}";echo -n "sha1: ";sha1sum "${@}";echo -n "sha256: ";sha256sum "${@}";echo -n "sha512: ";sha512sum "${@}"; }
+function mount_vmshare() { vmhgfs-fuse .host:/ /mnt/host }
+function docker_clean() {
     for exited_container in $(docker ps -a | grep "Exited" | awk '{print $1}'); do
         echo -n "Removing docker container: "
         docker rm $exited_container
     done
+}
+function command_exists {
+    which "$1" &>/dev/null || command -v "$1" &>/dev/null
+}
+# -----------------------------------------------
+# Special Alias
+# -----------------------------------------------
+[[ $(uname -a | awk '{print $1}') == "Darwin" ]] && {
+    # macOS Alias
+    command_exists grc && {
+            alias ls='grc ls -G'
+    } || {  alias ls='ls -G';}
+} || {
+    # Non-macOS Alias
+    command_exists grc && {
+            alias ls='grc ls --color'
+    } || {  alias ls='ls --color'; }
 }
 # -----------------------------------------------
 # Sourcing

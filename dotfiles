@@ -6,12 +6,10 @@
 #   
 #   _ALL_CAPS_VARIABLE_NAME     = Private global scope variable (Don't change these values)
 #   ALL_CAPS_VARIABLE_NAME      = Global scope variables
-#   lower_case_variable_name    = Local scope variable
+#   lower_case_variable_name    = Local scope variable or function
 #========================================================
 #   Configurable Variables
 #========================================================
-declare MAC_RESTART=true
-declare CREATE_TMUX_SESSION=false
 declare DEBUG=false
 declare VERBOSE=false
 #========================================================
@@ -21,13 +19,13 @@ declare REQUIRE_BASH_4_4=false
 declare INSTALL_DEPENDENCIES=true
 declare PROFILE_FILENAME="${PROFILE_FILENAME:-"example_profiles/default.json"}"
 declare DOTFILES="${HOME}/dotfiles"
-declare DOTFILES_LOGS="${DOTFILES}/_logs" && LIBCORE_LOGS="$DOTFILES_LOGS"
 #========================================================
 #   Imports
 #========================================================
 declare -a DEPENDENCIES=(
     "./lib/lib-core.sh"
     "./lib/lib-installers.sh"
+    "./lib/lib-configs.sh"
 )
 for dependency in ${DEPENDENCIES[@]};do
 [[ -r "$dependency" ]] && { source "$dependency" || 
@@ -40,39 +38,33 @@ done
 function help_message {
     display_bar
     display_message """
-    dotfiles - Mike Abreu
-    This program will configure your terminal environment and maintain it.
-
+    ${CTEAL}dotfiles${CE} - Mike Abreu
+    This program will configure your terminal environment.
+    """
+    display_message """
     Options:
     -h                          Display this help message.
     -p \"path/to/profile\"        Load a profile from json file.
-    -t                          Skip creating and attaching to a tmux session.
-    -s                          Skip installing dotfile dependencies.
     -d                          Debug messaging
     -v                          Enable verbose messaging.
-
+    """
+    display_message """
     Examples: (Assuming dotfiles can be called from PATH. Use ./dotfiles otherwise)
-    dotfiles
-    dotfiles -vt
-    dotfiles -p profiles/default.json
-    dotfiles -vtdp profiles/default.json
-    dotfiles -v -t -d -p profiles/default.json
+    ${CTEAL}dotfiles${CE}
+    ${CTEAL}dotfiles${CE} -p example_profiles/default.json
+    ${CTEAL}dotfiles${CE} -v -p example_profiles/default.json
     """
 }
 function introduction_message {
     display_bar
     display_message """
     dotfiles - Mike Abreu
-    This program will configure your terminal environment and attempt to maintain it.
+    This project aims to separate logic from configuration files.
     """
     display_message """
-    This program aims to separate logic to quickly install and configure a terminal environment
-    from the configuration files themselves. This allows for private storage of configuration files
-    without having to maintain software to quickly install and configure those configuration files.
-    """
-    display_message """
-    Use a profile to select exactly which configuration files and software is 
-    installed and configured. The program focuses on home and etc config files.
+    The goal is to quickly install and configure a terminal environment using the dotfiles bash script. 
+    You can keep your configuration files separate of the dotfiles script and simply link to them in your profile. 
+    Profiles allow different configurations easily using the dotfiles script.
     """
     display_bar
 }
@@ -82,20 +74,16 @@ function introduction_message {
 function handle_arguments {
     # Arg: -p "path/to/profile.json" | Load profile
     # Arg: -h | Help Message
-    # Arg: -t | Skip attaching to tmux
-    # Arg: -s | Skip installing dependencies
     # Arg: -d | Debug messaging
     # Arg: -v | Enable Verbose
-    # Arg: -m | Skip relaunching bash on macOS
+    # Arg: -s | Skip installing dependencies (Hidden)
     while getopts ":p:htsdvm" opt;do
         case $opt in
             p)  PROFILE_FILENAME="$OPTARG" ;;
             h)  help_message && display_bar && exit 1 ;;
-            t)  CREATE_TMUX_SESSION=true ;;
             s)  INSTALL_DEPENDENCIES=false ;;
             d)  DEBUG=true ;;
             v)  VERBOSE=true ;;
-            m)  MAC_RESTART=false ;;
             \?) display_error "Invalid option: -$OPTARG. Exiting." >&2; exit 1 ;;
             :)  display_error "Option -$OPTARG requires an argument. Exiting." >&2; exit 1 ;;
         esac
@@ -146,27 +134,11 @@ function main {
         install_system_package "git"
         display_bar
     fi
-    if [[ $CREATE_TMUX_SESSION == true ]];then
-        # Load tmux
-        ! tmux list-sessions &>/dev/null | grep "dotfiles" &>/dev/null && {
-            display_title "Tmux: Starting new-session 'dotfiles'"
-            tmux new-session -d -s dotfiles
-        } || { tmux kill-session -t dotfiles; }
-        prompt_user message="About to connect to tmux, are you ready? [Y/n]: " \
-            failure_message="You were not ready, run with -t to skip tmux." \
-            success_message="" error_message="" warning_message=""
-        display_title "Tmux: Attaching to session 'dotfiles'"
-        tmux send-keys "./dotfiles $verbose_arg $debug_arg -tsmp ${PROFILE_FILENAME}" Enter
-        tmux attach-session -t dotfiles &>/dev/null
-        display_warning "Tmux: Continuing execution in tmux session. Exiting."
-        exit 0
-    fi
-    ! check_bash_version &&
-    [[ $OPERATING_SYSTEM == "Darwin" ]] &&
-    [[ $MAC_RESTART == true ]] && {
-        # Restart bash shell to load 4.4+ bash
-        display_warning "Restarting bash to upgrade to 4.4 features."
-        ./dotfiles $verbose_arg $debug_arg -smp ${PROFILE_FILENAME}
+    # The below check is for fresh installs using bash lower than 4.4.
+    ! check_bash_version && {
+        # Attempting to restart bash shell to load 4.4+ bash
+        display_warning "Bash 4.4 is required, attempting to restart to use new bash version from installing dependencies."
+        ./dotfiles $verbose_arg $debug_arg -sp ${PROFILE_FILENAME}
         exit 0
     }
     # Loaded here because it requires bash 4.4+
@@ -180,16 +152,10 @@ function main {
     # Install and configure the profile to the system
     install_profile "$PROFILE_FILENAME"
     display_success "All done setting up the terminal. There might be manual actions to perform with your profile. You'll want to double check this."
-    display_warning "Recommended: Start a new terminal instead of continuning from the installation one."
+    display_warning "Recommended: Start a new terminal instead of continuing from the installation one."
     $(which ${DOTFILES_PROFILE[SHELL]})
 }
 #========================================================
 #   Main Execution
 #========================================================
-! check_bash_version && {
-    # 4.3 or lower bash
-    main "$@" | tee -a "${DOTFILES_LOGS}/before_prereq-install_logfile"
-} || {
-    # 4.4+ bash
-    main "$@" | logfile "${DOTFILES_LOGS}/dotfiles_installation_logfile"
-}
+main "$@"
