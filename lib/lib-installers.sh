@@ -285,8 +285,20 @@ function install_spaceship_theme {
 #========================================================
 #   Custom Installers       
 #========================================================
+function install_firacode {
+    local dotfiles_home=$1
+    [[ $OPERATING_SYSTEM == 'Darwin' ]] && {
+        display_warning "install firacode manually at https://github.com/tonsky/FiraCode/tree/master/distr/ttf."
+        return 0
+    }
+    display_info "Installing firacode"
+    install_system_package "fonts-firacode"
+}
 function install_amix_vimrc {
+    local dotfiles_home=$1
     display_info "Installing amix/vimrc"
+    git clone --depth=1 https://github.com/amix/vimrc.git "${dotfiles_home}/.vim_runtime"
+    display_bar
 }
 function install_iterm2 {
     [[ $OPERATING_SYSTEM != 'Darwin' ]] && {

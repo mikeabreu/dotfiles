@@ -58,11 +58,13 @@ function load_profile {
 function install_profile {
     # Show the user the loaded profile
     display_profile
-    # Prompt user to continue with installation
-    prompt_user message="Do you wish to install this profile [Y/n]:" \
-        success_message="Continuing with profile installation." \
-        failure_message="User exited the program." \
-          error_message="Invalid option. Exiting."
+    [[ $SKIP_PROMPTS == false ]] && {
+        # Prompt user to continue with installation
+        prompt_user message="Do you wish to install this profile [Y/n]:" \
+            success_message="Continuing with profile installation." \
+            failure_message="User exited the program." \
+            error_message="Invalid option. Exiting."
+    }
     # Copy profile into .loaded_profile for sync operations.
     display_bar
     display_info "Copying profile into .loaded_profile"
