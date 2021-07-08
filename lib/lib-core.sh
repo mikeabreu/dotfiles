@@ -4,14 +4,17 @@
 # Description: This library file contains lots of useful bash functions that I've
 #   created previously. It's useful to include this lib-core file at the top of a
 #   new script you are creating. It brings in lots of tested functionality.
-# Handler to avoid multiple sourcing of this file
+#========================================================
+#   Dependency Check
+#========================================================
+# Prevent duplicate sourcing
 [[ $_LOADED_LIB_CORE == true ]] && {
     [[ $DEBUG == true ]] && display_debug "Skipping: Duplicate source attempt on lib-core.sh."
     return 0
 }
-#============================
+#========================================================
 #   Script Variables
-#============================
+#========================================================
 #   Assign these before sourcing this file to overwrite defaults
 declare _LIB_SETUP_ACTIONS=${_LIB_SETUP_ACTIONS:-true}
 declare REQUIRE_BASH_4_4=${REQUIRE_BASH_4_4:-true}
@@ -19,10 +22,10 @@ declare REQUIRE_PRIVILEGE=${REQUIRE_PRIVILEGE:-false}
 declare ENABLE_TRAP_HANDLERS=${ENABLE_TRAP_HANDLERS:-true}
 declare VERBOSE=${VERBOSE:-false}
 declare DEBUG=${DEBUG:-false}
-declare LIBCORE_LOGS=${LIBCORE_LOGS:-"${HOME}/.logs/"}
-#============================
+declare LIBCORE_LOGS=${LIBCORE_LOGS:-""}
+#========================================================
 #   Public Global Variables
-#============================
+#========================================================
 #   Don't Change These
 #   These variables can be useful to query directly
 declare OPERATING_SYSTEM=${OPERATING_SYSTEM:-"Unknown"}
@@ -31,21 +34,20 @@ declare IS_PRIVILEGED=false
 declare IS_ROOT=false
 declare HAS_SUDO=false
 declare CAN_SUDO=false
-#============================
+#========================================================
 #   Private Global Variables
-#============================
-#   Don't Change These
-declare _SYSTEM_PACKAGE_MANAGER_UPDATED=false
+#========================================================
 declare _LOADED_LIB_CORE=true
-#============================
+#========================================================
 #   Core Functions
-#============================
+#========================================================
 function command_exists {
     which "$1" &>/dev/null || command -v "$1" &>/dev/null
 }
 function check_privileges {
     [[ $REQUIRE_PRIVILEGE == false ]] && return 0
-    [[ $EUID -eq 0 ]] && IS_ROOT=true && IS_PRIVILEGED=true
+    [[ -n $SUDO_USER ]] && { display_warning "Script was run with sudo."; }
+    [[ $EUID -eq 0 ]] && { IS_ROOT=true; IS_PRIVILEGED=true; }
     command_exists sudo && {
         # Success: sudo exists
         HAS_SUDO=true
@@ -119,219 +121,66 @@ function run_elevated_cmd {
     done
     # Determine privileges and run command appropriately
     [[ $IS_PRIVILEGED != true ]] && return 1
-    if [[ $IS_ROOT == true ]]; then
-        display_info "Running command as root:${CRED} $cmd ${args[@]} ${CE}"
+    [[ $IS_ROOT == true ]] && {
+        display_info "Running command as root:" "$cmd ${args[@]}"
         $cmd ${args[@]}
         return "$?"
-    fi
-    if [[ $CAN_SUDO == true ]]; then
+    }
+    [[ $CAN_SUDO == true ]] && {
         if [[ $OPERATING_SYSTEM == "Darwin" ]] && [[ $cmd == "brew" ]]; then
-            display_warning "Running brew install as user:${CGREEN} $cmd ${args[@]} ${CE}"
+            display_warning "Running brew install as user:" "$cmd ${args[@]}"
             $cmd ${args[@]}
             return "$?"
         else
-            display_info "Running command with sudo:${CGREEN} $cmd ${args[@]} ${CE}"
+            display_info "Running command with sudo:" "$cmd ${args[@]}"
             sudo $cmd ${args[@]}
             return "$?"
         fi
-    fi
-    display_warning "Running command without privileges:${CYELLOW} $cmd ${args[@]} ${CE}"
+    }
+    display_warning "Running command without privileges:" "$cmd ${args[@]}"
     $cmd ${args[@]}
     return "$?"
 }
-function safe_copy {
-    local src_file="$1"
-    local dst_file="${2:-"./"}"
-    local backup_folder="${3:-""}"
-    [[ -n "$backup_folder" ]] && {
-        # Backup dir exists
-        [[ -e "$backup_folder" ]] && [[ ! -d "$backup_folder" ]] && {
-            # Remove any blocker files
-            display_warning "Removing blocker file: $backup_folder"
-            rm -fr "$backup_folder"
-        }
-        # Create it if it doesn't already exist
-        [[ ! -e "$backup_folder" ]] && mkdir -p "$backup_folder"
-    }
-    diff "$src_file" "$dst_file" &>/dev/null && {
-        display_warning "Skipping: '$src_file' is the same file as '$dst_file'"
-        return 0
-    }
-    # determine src filename without path
-    local src_filename="$(echo $src_file | awk -F'/' '{print $NF}')"
-    # check if dst is a directory
-    [[ -d "$dst_file" ]] && {
-        # If not "dst_file/", then add the '/' for "dst_file/src_filename"
-        [[ "${dst_file: -1}" != '/' ]] && { 
-                local dst_path="${dst_file}/${src_filename}"
-        } || {  local dst_path="${dst_file}${src_filename}"; }
-        # Check if we need to backup any files that might be overwritten
-        [[ -e "$dst_path" ]] && {
-            [[ -n "$backup_folder" ]] && backup_file "${backup_folder}/$dst_path"
-            [[ -z "$backup_folder" ]] && backup_file "$dst_path"
-        }
-    }
-    [[ ! -e "$dst_file" ]] && [[ "${dst_file: -1}" == '/' ]] && {
-        display_info "Making directory: $dst_file"
-        mkdir -p "$dst_file"
-    }
-    # Check if dst_file exists and isn't a directory.
-    [[ -e "$dst_path" ]] && [[ ! -d "$dst_file" ]] && {
-        [[ -n "$backup_folder" ]] && backup_file "${backup_folder}/$dst_path"
-        [[ -z "$backup_folder" ]] && backup_file "$dst_path"
-    }
-    # Perform copy operations
-    [[ -d "$src_file" ]] && {
-        [[ -n "$dst_path" ]] && {
-                display_info "Copying directory: $src_file -> $dst_path"
-        } || {  display_info "Copying directory: $src_file -> $dst_file"; }
-        [[ $DEBUG == true ]] && {
-                display_debug
-                cp -Rv "$src_file" "$dst_file" 2>/dev/null
-                echo
-        } || {  cp -R "$src_file" "$dst_file" 2>/dev/null; }
-        return "$?"
-    }
-    [[ -n "$dst_path" ]] && { 
-            display_info "Copying file: $src_file -> $dst_path"
-    } || {  display_info "Copying file: $src_file -> $dst_file"; }
-    [[ $DEBUG == true ]] && {
-            display_debug
-            cp -v "$src_file" "$dst_file" 2>/dev/null
-            echo
-    } || {  cp "$src_file" "$dst_file" 2>/dev/null; }
-    return "$?"
-}
-function backup_file {
-    # ratelimit 1
-    local src_file="$1"
-    local count="${2:-"1"}"
-    local dst_file="$src_file.${count}.backup"
-    [[ -e "$dst_file" ]] && {
-        diff "$src_file" "$dst_file" &> /dev/null && {
-            display_warning "Skipping: File Backup: The file $src_file is the same as $dst_file there is no need to backup."
-        }
-        local new_count=$(($count+1))
-        display_warning "File exists: $dst_file retrying as ${src_file}.${new_count}.backup"
-        # Recursive call.
-        backup_file "$src_file" "$new_count"
-        return 1
-    }
-    # Display messages
-    [[ -d "$src_file" ]] && display_info "Backing up directory: $src_file -> $dst_file"
-    [[ -f "$src_file" ]] && display_info "Backing up file: $src_file -> $dst_file"
-    # Perform backup operations
-    [[ $DEBUG == true ]] && {
-            display_debug
-            cp -Rv "$src_file" "$dst_file" 2>/dev/null
-            echo
-    } || {  cp -R "$src_file" "$dst_file" 2>/dev/null; }
-    return "$?"
-}
-#============================
-#   System Package Management 
-#============================
-function update_system_package {
-    [[ -z "$OPERATING_SYSTEM" ]] && display_error "Unknown OS" && exit 1
-    case $OPERATING_SYSTEM in
-        Ubuntu | Debian) run_elevated_cmd apt-get update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
-        CentOS) run_elevated_cmd yum update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
-        Darwin) run_elevated_cmd brew update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
-        *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
-    esac
-}
-function install_system_package {
-    display_bar
-    # Assign local variables
-    local package_name="$1"
-    # Check is command exists, return 0 if it does
-    command_exists $package_name && {
-        display_warning "Skipping: System Package: $package_name (Already Installed)"
-        return 0
-    }
-    # Attempt to install the system package
-    display_title "Attempting to install system package: '$package_name'."
-    # If system package manager hasn't been updated, then update it
-    [[ $_SYSTEM_PACKAGE_MANAGER_UPDATED == false ]] && {
-        display_info "Updating system packages"
-        update_system_package
-    }
-    # Determine which system package manager to use by OS
-    case "$OPERATING_SYSTEM" in
-        Ubuntu|Debian)  
-            # Use 'apt'
-            run_elevated_cmd apt-get install -y $package_name && {
-                display_success "Successfully installed system package '$package_name'."
-                return 0
-            } || {
-                display_error "Skipping: Something went wrong during system package installation."
-                return 1
-            } ;;
-        CentOS) 
-            # Use 'yum'
-            run_elevated_cmd yum install -y $package_name && {
-                display_success "Successfully installed system package '$package_name'."
-                return 0
-            } || {
-                display_error "Skipping: Something went wrong during system package installation."
-                return 1
-            } ;;
-        Darwin) 
-            # Use 'brew'
-            run_elevated_cmd brew install $package_name && {
-                display_success "Successfully installed system package '$package_name'."
-                return 0
-            } || {
-                display_error "Skipping: Something went wrong during system package installation."
-                return 1
-            } ;;
-        *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
-    esac
-    # If it didnt return from the case switch, return unsuccessfully.
-    return 1
-}
-# TODO:
-# check_system_package() {
-    
-# }
-#============================
+#========================================================
 #   Display Functions     
-#============================
+#========================================================
 function _display_message {
-    echo -e "$1 $2 ${CE} ${CWHITE} ${@:3} ${CE}"
-    # [[ log true ]] log action
+    # $1 = Color (i.e. $CRED, $CGREEN, etc.)
+    # $2 = Symbol (i.e. [+], [-], etc.)
+    # $3 = Message
+    echo -e "${1}${2}${CE} ${@:3} ${CE}"
 }
 function newline {
     echo "" && return 0
 }
 function display_message {
-    _display_message $CWHITE "    $@"
+    _display_message $CWHITE "$@"
 }
 function display_title {
-    _display_message $CPURPLE '[~] TITLE: ' "$@"
+    _display_message $CLPINK "[~] $1" "${@:2}"
 }
 function display_info {
-    _display_message $CBLUE '[*]' "$@"
+    _display_message $CLBLUE "[*] $1" "${@:2}"
 }
 function display_success {
-    _display_message $CGREEN '[+]' "$@"
+    _display_message $CLGREEN "[+] $1" "${@:2}"
 }
 function display_warning {
-    _display_message $CYELLOW '[!]' "$@"
+    _display_message $CYELLOW "[!] $1" "${@:2}"
 }
 function display_error {
-    _display_message $CRED '[-]' "$@"
+    _display_message $CLRED "[-] $1" "${@:2}"
 }
 function display_debug {
-    [[ -z "$@" ]] && echo -ne "$CPINK [~] DEBUG OUTPUT:${CE} "
-    [[ -n "$@" ]] && _display_message $CPINK '[~] DEBUG: ' "$@"
+    [[ -z "$@" ]] && echo -ne "$CPINK [~]    DEBUG OUTPUT:${CE} "
+    [[ -n "$@" ]] && _display_message $CPINK '[~]    DEBUG: ' "$@"
 }
 function display_prompt {
-    echo -ne "$CYELLOW [!] ${CE} ${CWHITE} ${@} ${CE}"
+    echo -ne "$CYELLOW [!]${CE}${CWHITE} ${@} ${CE}"
 }
 function display_bar {
-    CCOLOR=${1:-$CWHITE}
-    echo -e "${1}===============================================================================${CE}"
+    CCOLOR=${1:-$CGRAY}
+    echo -e "${CCOLOR}===============================================================================${CE}"
 }
 function display_array {
     local _raw_array=($1)
@@ -343,42 +192,40 @@ function display_array {
 function prompt_user {
     ! check_bash_version && return 1
     # handle associative arguments
-    local -A _args
-    for _arg in "$@";do
-        local key="$(echo "$_arg" | cut -f1 -d=)"
-        local value="$(echo "$_arg" | cut -f2 -d=)"
-        _args+=([$key]="$value")
+    local -A args
+    for arg in "$@";do
+        local key="$(echo "$arg" | cut -f1 -d=)"
+        local value="$(echo "$arg" | cut -f2 -d=)"
+        args+=([$key]="$value")
     done
     # assign local variables from associative array
-    local _message="${_args[message]:-"Do you wish to continue with the program [Y/n]: "}"
-    local _default_action="${_args[default_action]:-"Y"}"
-    local _warning_message="${_args[warning_message]:-""}"
-    local _success_message="${_args[success_message]:-""}"
-    local _failure_message="${_args[failure_message]:-""}"
-    local _exit_on_failure="${_args[exit_on_failure]:-true}"
-    local _error_message="${_args[error_message]:-""}"
+    local message="${args[message]:-"Do you wish to continue with the program [Y/n]: "}"
+    local default_action="${args[default_action]:-"Y"}"
+    local warning_message="${args[warning_message]:-""}"
+    local success_message="${args[success_message]:-""}"
+    local failure_message="${args[failure_message]:-""}"
+    local exit_on_failure="${args[exit_on_failure]:-true}"
+    local error_message="${args[error_message]:-""}"
     # Prompt user for program execution.
-    [[ -n "$_warning_message" ]] && display_warning "$_warning_message"
-    display_prompt "$_message"
+    [[ -n "$warning_message" ]] && display_warning "$warning_message"
+    display_prompt "$message"
     read _user_response
     # Assign default action
-    local user_response=${_user_response:-$_default_action}
+    local user_response=${_user_response:-$default_action}
     case $user_response in
-        [yY][eE][sS]|[yY])  [[ -n "$_success_message" ]] && display_success "$_success_message"
-            return 0 ;;
-        [nN][oO]|[nN]) [[ $_exit_on_failure == true ]] && 
-            [[ -n "$_failure_message" ]] && display_error "$_failure_message" && exit 1
-            [[ -n "$_failure_message" ]] && display_warning "$_failure_message"
-            return 1 ;;
-        *)  [[ -n "$_error_message" ]] && display_error "$_error_message"
-            exit 1 ;;
+        [yY][eE][sS]|[yY])  [[ -n "$success_message" ]] && display_success "$success_message"; return 0 ;;
+        [nN][oO]|[nN])      [[ $exit_on_failure == true ]] && [[ -n "$failure_message" ]] && {
+                                display_error "$failure_message"
+                                exit 1
+                            }
+                            [[ -n "$failure_message" ]] && display_warning "$failure_message"
+                            return 1 ;;
+        *)  [[ -n "$error_message" ]] && display_error "$error_message"; exit 1 ;;
     esac
-    # If not returned through case then return unsuccessfully.
-    return 1
 }
-#============================
+#========================================================
 #   Misc Functions  
-#============================
+#========================================================
 function add_terminal_colors {
     # Reset Color
     CE="\033[0m"
@@ -387,10 +234,18 @@ function add_terminal_colors {
     CRED="${CT}9m"
     CGREEN="${CT}28m"
     CBLUE="${CT}27m"
+    CTEAL="${CT}50m"
     CORANGE="${CT}202m"
     CYELLOW="${CT}226m"
     CPINK="${CT}13m"
     CPURPLE="${CT}63m"
+
+    CLRED="${CT}196m"
+    CLGREEN="${CT}46m"
+    CLBLUE="${CT}45m"
+    CLPINK="${CT}171m"
+
+    CGRAY="${CT}240m"
     CWHITE="${CT}255m"
     # Text: All Hex Values: C0 - C255
     for HEX in {0..255};do eval "C$HEX"="\\\033[38\;5\;${HEX}m";done
@@ -406,6 +261,9 @@ function add_terminal_colors {
     # Background: All Hex Values: CB0 - CB255
     for HEX in {0..255};do eval "CB${HEX}"="\\\033[48\;5\;${HEX}m";done
 }
+function remove_color {
+    sed -e 's/\[[0-9]\{2\}[;][0-9][;][0-9]\{1,3\}m//g' -e 's/\[0m//g' -e 's///g'
+}
 function check_bash_version {
     # [[ $DEBUG == true ]] && display_debug "Bash Version: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
     # If 4.X, check if it's 4.4 or higher, if 4.4+ then skip.
@@ -415,51 +273,49 @@ function check_bash_version {
     # Return false if lower version than 4.4
     return 1
 }
-function ratelimit {
-    local ratelimit="${1:-"1"}"
-    local current_runtime=$(date +%s)
-    if [[ -s "${LIBCORE_LOGS}/runtime" ]];then
-        local last_runtime="$(cat "${LIBCORE_LOGS}/runtime")"
-        local target_runtime=$(($last_runtime + $ratelimit))
-        local offset=$(($target_runtime - $current_runtime))
-        [[ $target_runtime > $current_runtime ]] && {
-            [[ $DEBUG == true ]] && {
-                display_debug "Ratelimit Variables:"
-                display_debug "\tRatelimit: $ratelimit"
-                display_debug "\tLast Runtime: $last_runtime"
-                display_debug "\tCurrent Runtime: $current_runtime"
-                display_debug "\tTarget Runtime: $target_runtime"
-                display_debug "\tOffset: $offset"
+function logfile {
+    local file="$1"
+    while true ; do
+        read -r -s -t 0.1 -s holder
+        local result="$?"
+        local line="$holder"
+        [[ "$result" -eq 0 || "$result" -eq 142  ]] && {
+            [[ -n "$line" ]] && {
+                # Display the line to stdout with color.
+                [[ "$result" -eq 0   ]] && echo -e "$line"
+                [[ "$result" -eq 142 ]] && echo -ne "$line"
+                # Log the information to the logfile without color.
+                echo "$line" | remove_color >> $file
             }
-            sleep "$offset"
-            return 1
+            [[ $FULL_DEBUG == true ]] && display_debug "Logfile result:[${result}]"
+            continue
         }
-    fi
-    date +%s > "${LIBCORE_LOGS}/runtime"
-    return 0
+        [[ $FULL_DEBUG == true ]] && display_debug "Logfile result:[${result}]"
+        break
+    done
 }
-#============================
+#========================================================
 #   Trap Handlers
-#============================
+#========================================================
 function sigint_handler {
     echo
     prompt_user message="Do you wish to continue with the program [y/N]: " \
         warning_message="Signal Interrupt was received, CTRL + C." \
         success_message="Attempting to continue with program execution. There might be errors." \
-        failure_message="User chose to not continue. Exiting." \
-          error_message="Invalid option. Exiting." \
+        failure_message="User exited the program." \
+          error_message="Invalid option" \
          default_action="N"
 }
 function exit_handler {
     local result="$?"
     [[ $result -eq 0 ]] && [[ $VERBOSE == true ]] && display_success "Program is exiting succesfully. Good bye."
-    [[ $result -ne 0 ]] && [[ $VERBOSE == true ]] && display_error "Program exited with an error. Good bye."
+    [[ $result -ne 0 ]] && [[ $VERBOSE == true ]] && display_error   "Program exited with an error. Good bye."
 }
-#============================
+#========================================================
 #   Main Execution / Initialization
-#============================
+#========================================================
 add_terminal_colors
-[[ $DEBUG == true ]] && display_debug "Loaded lib-core.sh file"
+[[ $DEBUG == true ]] && display_debug "LIB-CORE: Loaded lib-core.sh file"
 [[ $_LIB_SETUP_ACTIONS == true ]] && {
     [[ $REQUIRE_BASH_4_4 == true ]] && ! check_bash_version && {
         [[ $DEBUG == true ]] && display_debug "lib-core.sh requires bash 4.4+"
@@ -467,13 +323,20 @@ add_terminal_colors
     }
     [[ $ENABLE_TRAP_HANDLERS == true ]] && trap sigint_handler SIGINT
     [[ $ENABLE_TRAP_HANDLERS == true ]] && trap exit_handler EXIT
-    [[ ! -d "$LIBCORE_LOGS" ]] && {
-        [[ -e "$LIBCORE_LOGS" ]] && {
-            display_warning "Removing blocking file for: $LIBCORE_LOGS"
-            rm -fr "$LIBCORE_LOGS"
+    [[ -n "$LIBCORE_LOGS" ]] && {
+        # if logs folder isnt ""
+        [[ ! -d "$LIBCORE_LOGS" ]] && {
+            # if logs folder isn't a directory
+            [[ -e "$LIBCORE_LOGS" ]] && {
+                # and the logs folder exists, its a blocking file
+                display_warning "Removing blocking file for: $LIBCORE_LOGS"
+                backup_file "$LIBCORE_LOGS"
+                rm -fr "$LIBCORE_LOGS"
+            }
+            # Make the logs folder
+            display_info "Making log folder:" "$LIBCORE_LOGS"
+            mkdir -p "$LIBCORE_LOGS"
         }
-        display_info "Making log folder: $LIBCORE_LOGS"
-        mkdir -p "$LIBCORE_LOGS"
     }
     check_operating_system
     check_privileges

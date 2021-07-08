@@ -13,8 +13,5 @@
         "tmux",
         "grc"
     ],
-    "configs_home": [
-        "default=.vimrc",
-        "default=.zshrc"
-    ]
+    "configs_path": "example_configs/default/home"
 }
