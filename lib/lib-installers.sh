@@ -212,7 +212,8 @@ function install_custom_installers {
     for installer in "${installers[@]}"; do
         case "$installer" in
             # ADD CUSTOM INSTALLERS HERE
-            iterm2)     install_iterm2 ;;
+            iterm2)         install_iterm2 ;;
+            amix/vimrc)     install_amix_vimrc ;;
             # Catch All
             *)  display_warning "LIB-INSTALLERS: No installer found for custom install:" "$installer"; display_bar ;;
         esac
@@ -284,6 +285,9 @@ function install_spaceship_theme {
 #========================================================
 #   Custom Installers       
 #========================================================
+function install_amix_vimrc {
+    display_info "Installing amix/vimrc"
+}
 function install_iterm2 {
     [[ $OPERATING_SYSTEM != 'Darwin' ]] && {
         # If not macOS just return 1 for false.

@@ -39,12 +39,6 @@ Although I don't support this software I generally have tested and designed it t
 `stow`
 - GNU Stow is used to symlink ~/dotfiles/_home to ~/
 
-`tmux`
-- This can be removed as a depedency.
-
-`git`
-- This can be removed as a depedency.
-
 # Getting Started
 Here is a quick one liner to clone the repo, cd into it and run the script.
 
