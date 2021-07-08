@@ -16,6 +16,7 @@ The dotfiles script is mainly four components:
 
 This project was designed to serve my own purposes and mostly to learn bash in a greater depth. I don't aim to support anything or add additional installers that I don't use. However, you are welcome to fork this repository and add your own installers. Check out the "Adding your own installers" section.
 
+note these screenshots are from different runs of the program but show the full output, one from testuser with sudo rights and one as root.
 ![Example Usage](/screenshots/example_usage.png?raw=true "Example Usage")
 ![Example Usage Continued](/screenshots/example_usage_continue.png?raw=true "Example Usage Continued")
 
