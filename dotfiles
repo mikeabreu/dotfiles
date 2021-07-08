@@ -126,6 +126,7 @@ function main {
         # Install dependencies for dotfiles to operate
         display_bar
         display_title "Installing dotfile dependencies"
+        display_bar
         [[ $OPERATING_SYSTEM == 'Darwin' ]] && {
             install_brew
             install_brew_bash

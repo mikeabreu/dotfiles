@@ -313,7 +313,7 @@ function install_amix_vimrc {
     local dotfiles_home=$1
     [[ ! -d "${dotfiles_home}/.vim_runtime" ]] && {
         display_info "Installing:" "amix/vimrc"
-        git clone --depth=1 https://github.com/amix/vimrc.git "${dotfiles_home}/.vim_runtime" 2>/dev/null
+        git clone --depth=1 https://github.com/amix/vimrc.git "${dotfiles_home}/.vim_runtime"
     } || {
         display_warning "Skipping: Custom Installer already installed:" "amix/vimrc"
     }

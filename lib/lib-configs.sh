@@ -99,6 +99,7 @@ function install_profile {
         #     target_dir="${DOTFILES_DIRS[HOME]}"
         local _files=($(/bin/ls -A "${DOTFILES_DIRS[HOME]}" ))
         display_title "Copying configuration files to ${DOTFILES_DIRS[HOME]} and then symlinking to ${HOME}/"
+        display_bar
         # Copy files from profile to _home
         display_info "Copying files" "${DOTFILES_PROFILE[CONFIGS_PATH]} -> ${DOTFILES_DIRS[HOME]}"
         cp -vr "${DOTFILES_PROFILE[CONFIGS_PATH]}/." "${DOTFILES_DIRS[HOME]}"
@@ -106,7 +107,7 @@ function install_profile {
         ls -lah ${DOTFILES_DIRS[HOME]}
         # Check each file in _home against ~/ and backup anything found in ~/.
         for _file in "${_files[@]}";do
-            [[ ! -h ~/$_file ]] && {
+            [[ ! -h "${HOME}/${_file}" ]] && {
                 display_warning "File exists and isn't a symlink:" "${HOME}/$_file"
                 display_info "Moving file:" "${HOME}/$_file -> ${HOME}/${_file}.bkp"
                 mv -v ${HOME}/$_file ${HOME}/${_file}.bkp
