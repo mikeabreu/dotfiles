@@ -276,7 +276,13 @@ function check_bash_version {
 function logfile {
     local file="$1"
     while true ; do
-        read -r -s -t 0.1 -s holder
+        [[ $OPERATING_SYSTEM == "Darwin" ]] && {
+            # macOS
+            read -r -s -t 0.1 -s holder
+        } || {
+            # Default
+            read -r -s -t 0.1 -s holder
+        }
         local result="$?"
         local line="$holder"
         [[ "$result" -eq 0 || "$result" -eq 142  ]] && {
