@@ -18,7 +18,8 @@ This project was designed to serve my own purposes and mostly to learn bash in a
 
 note these screenshots are from different runs of the program but show the full output, one from testuser with sudo rights and one as root.
 ![Example Usage](/screenshots/example_usage.png?raw=true "Example Usage")
-![Example Usage Continued](/screenshots/example_usage_continue.png?raw=true "Example Usage Continued")
+![Example Usage 2](/screenshots/example_usage_2.png?raw=true "Example Usage 2")
+![Example Usage 3](/screenshots/example_usage_3.png?raw=true "Example Usage 3")
 
 # Supported Operating Systems
 Although I don't support this software I generally have tested and designed it to work on most versions of the following operating systems:

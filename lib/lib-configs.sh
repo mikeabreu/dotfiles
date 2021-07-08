@@ -106,6 +106,7 @@ function install_profile {
         display_info "Displaying contents of:" "${DOTFILES_DIRS[HOME]}"
         ls -lah ${DOTFILES_DIRS[HOME]}
         # Check each file in _home against ~/ and backup anything found in ~/.
+        display_info "Checking for existing files in $HOMME"
         for _file in "${_files[@]}";do
             [[ ! -h "${HOME}/${_file}" ]] && {
                 display_warning "File exists and isn't a symlink:" "${HOME}/$_file"
