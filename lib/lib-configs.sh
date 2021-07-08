@@ -109,8 +109,10 @@ function install_profile {
         for _file in "${_files[@]}";do
             [[ ! -h "${HOME}/${_file}" ]] && {
                 display_warning "File exists and isn't a symlink:" "${HOME}/$_file"
+                ls -lahd "${HOME}/$_file"
                 display_info "Moving file:" "${HOME}/$_file -> ${HOME}/${_file}.bkp"
                 mv -v ${HOME}/$_file ${HOME}/${_file}.bkp
+                ls -lahd "${HOME}/${_file}.bkp"
             }
         done
         # GNU STOW _home to ~/
