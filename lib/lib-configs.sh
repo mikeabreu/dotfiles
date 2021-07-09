@@ -105,7 +105,7 @@ function install_profile {
         display_info "Displaying contents of:" "${DOTFILES_DIRS[HOME]}"
         ls -lah ${DOTFILES_DIRS[HOME]}
         # Check each file in _home against ~/ and backup anything found in ~/.
-        display_info "Checking for existing files in $HOMME"
+        display_info "Checking for existing files in:" "$HOME"
         for _file in "${_files[@]}";do
             [[ -e "${HOME}/${_file}" ]] &&
             [[ ! -h "${HOME}/${_file}" ]] && {

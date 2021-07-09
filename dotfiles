@@ -137,6 +137,8 @@ function main {
         display_bar
         install_system_package "stow"
         display_bar
+        install_system_package "git"
+        display_bar
     fi
     # The below check is for fresh installs using bash lower than 4.4.
     ! check_bash_version && {
