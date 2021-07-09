@@ -28,7 +28,6 @@ declare -A PROFILE_SCHEMA=(
 declare DOTFILES="${HOME}/dotfiles"
 declare -A DOTFILES_DIRS=(
     [HOME]="${DOTFILES}/_home"
-    [CONFIGS_PATH]="${DOTFILES}/example_configs/default/home"
     [PROFILES]="${DOTFILES}/example_profiles"
 )
 declare PROFILE_FILENAME="${PROFILE_FILENAME:-"${DOTFILES_DIRS[PROFILES]}/default.json"}"
@@ -108,6 +107,7 @@ function install_profile {
         # Check each file in _home against ~/ and backup anything found in ~/.
         display_info "Checking for existing files in $HOMME"
         for _file in "${_files[@]}";do
+            [[ -e "${HOME}/${_file}" ]] &&
             [[ ! -h "${HOME}/${_file}" ]] && {
                 display_warning "File exists and isn't a symlink:" "${HOME}/$_file"
                 ls -lahd "${HOME}/$_file"
