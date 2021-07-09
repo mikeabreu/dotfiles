@@ -103,12 +103,12 @@ function connections {
 function ipx {
     [[ -z $1 ]] && {
         command_exists jq && {
-                curl "ipinfo.io" | jq '.'
-        } || {  curl "ipinfo.io" }
+                curl -s "ipinfo.io" | jq '.'
+        } || {  curl -s "ipinfo.io" }
     } || {
         command_exists jq && {
-                curl "ipinfo.io/${@}" | jq '.'
-        } || {  curl "ipinfo.io/${@}" }
+                curl -s "ipinfo.io/${@}" | jq '.'
+        } || {  curl -s "ipinfo.io/${@}" }
     }
 }
 function get_external_ip {
