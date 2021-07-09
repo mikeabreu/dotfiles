@@ -10,13 +10,16 @@
     ],
     "system_packages": [
         "vim",
-        "git",
         "tmux",
-        "grc"
+        "grc",
+        "htop",
+        "parallel",
+        "ipcalc",
+        "curl",
+        "wget"
     ],
     "custom_installers": [
         "amix/vimrc",
-        "firacode",
-        "iterm2"
+        "firacode"
     ]
 }

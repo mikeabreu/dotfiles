@@ -68,22 +68,48 @@ alias wgetasie8='wget -U "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Tri
 # -----------------------------------------------
 # Functions
 # -----------------------------------------------
+function command_exists {
+    which "$1" &>/dev/null || command -v "$1" &>/dev/null
+}
 function ports {
     echo -e "\033[38;5;50mListening ports:\033[0m"
     [[ $(uname -a | awk '{print $1}') == "Darwin" ]] && {
         # macOS port check
-        sudo lsof -i -P | grep -i "listen"
+        command_exists sudo && {
+                sudo lsof -i -P | grep -i "listen"
+        } || {  lsof -i -P | grep -i "listen"; }
     } || {
         # Non-macOS port check
-        sudo netstat -pantul | grep "LISTEN"
+        command_exists sudo && {
+                sudo netstat -pantul | grep "LISTEN"
+        } || {  netstat -pantul | grep "LISTEN"; }
+        
+    }
+}
+function connections {
+    echo -e "\033[38;5;50mEstablished Connections:\033[0m"
+    [[ $(uname -a | awk '{print $1}') == "Darwin" ]] && {
+        # macOS port check
+        command_exists sudo && {
+                sudo lsof -PiTCP
+        } || {  lsof -PiTCP; }
+    } || {
+        # Non-macOS port check
+        command_exists sudo && {
+                sudo netstat -pantul | grep "ESTABLISHED"
+        } || {  netstat -pantul | grep "ESTABLISHED"; }
     }
 }
 function ipx {
-    if [ -z $1 ]; then
-        curl "ipinfo.io"
-    else
-        curl "ipinfo.io/${@}"
-    fi
+    [[ -z $1 ]] && {
+        command_exists jq && {
+                curl "ipinfo.io" | jq '.'
+        } || {  curl "ipinfo.io" }
+    } || {
+        command_exists jq && {
+                curl "ipinfo.io/${@}" | jq '.'
+        } || {  curl "ipinfo.io/${@}" }
+    }
 }
 function get_external_ip {
     echo -en "Method 0\tipinfo.io\t";curl -s http://ipinfo.io/ip
@@ -96,9 +122,6 @@ function docker_clean {
         echo -n "Removing docker container: "
         docker rm $exited_container
     done
-}
-function command_exists {
-    which "$1" &>/dev/null || command -v "$1" &>/dev/null
 }
 # -----------------------------------------------
 # Special Alias
