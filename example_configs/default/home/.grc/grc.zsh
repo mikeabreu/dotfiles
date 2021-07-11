@@ -53,6 +53,7 @@ if [[ "$TERM" != dumb ]] && (( $+commands[grc] )) ; then
     "proftpd"
     "ps"
     "pv"
+    "sct"
     "semanageboolean"
     "semanagefcontext"
     "semanageuser"
