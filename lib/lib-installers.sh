@@ -37,9 +37,11 @@ function install_system_package {
     command_exists $package_name ||
     brew_grep_check $grep_check ||
     dpkg_check $package_name && {
-        command_exists $package_name && display_debug "command_exists check passed"
-        brew_grep_check $grep_check && display_debug "brew_grep_check check passed"
-        dpkg_check $package_name && display_debug "dpkg_check check passed"
+        [[ $DEBUG == true ]] && {
+            command_exists $package_name && display_debug "command_exists check passed"
+            brew_grep_check $grep_check && display_debug "brew_grep_check check passed"
+            dpkg_check $package_name && display_debug "dpkg_check check passed"
+        }
         display_warning "Skipping: System Package is already installed:" "$package_name"
         return 0
     }
