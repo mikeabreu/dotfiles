@@ -27,13 +27,14 @@ function update_system_package {
 function dpkg_check {
     [[ $OPERATING_SYSTEM == 'Ubuntu' ]] ||
     [[ $OPERATING_SYSTEM == 'Debian' ]] && {
-        dpkg -l | grep -i " $1 " &>/dev/null
+        dpkg -l | grep -i " $1" &>/dev/null
     }
     
 }
 function install_system_package {
     local package_name="$1"
     command_exists $package_name ||
+    brew_grep_check $grep_check ||
     dpkg_check $package_name && {
         display_warning "Skipping: System Package is already installed:" "$package_name"
         return 0
@@ -100,7 +101,7 @@ function install_brew_bash {
         display_bar
         return 0
     }
-    display_info "Installing package bash with brew."
+    display_info "Installing package with brew:" "bash"
     brew install bash &&
         display_success "Package: ${CWHITE}bash${CLGREEN} has been successfully installed."
     display_bar
@@ -114,11 +115,14 @@ function install_brew_coreutils {
     }
     # 'coreutils' is required for the use of 'timeout' in check_privileges. 
     # Need to install for Mac OS, installed by default on Ubuntu, Debian, CentOS
-    display_info "Installing package coreutils with brew."
+    display_info "Installing package with brew:" "coreutils"
     brew install coreutils &&
         display_success "Package: coreutils has been successfully installed."
     display_bar
     return $?
+}
+function brew_grep_check {
+    command_exists brew && brew list | grep -o "$1" &>/dev/null && { return 0; } || { return 1; }
 }
 #========================================================
 #   Dotfile Installers       
@@ -223,6 +227,7 @@ function install_custom_installers {
             iterm2)         install_iterm2 ;;
             amix/vimrc)     install_amix_vimrc "${dotfiles_root_dir}/_home" ;;
             firacode)       install_firacode "${dotfiles_root_dir}/_home";;
+            poetry)         install_poetry ;;
             # Catch All
             *)  display_warning "LIB-INSTALLERS: No installer found for custom install:" "$installer"; display_bar ;;
         esac
@@ -294,6 +299,17 @@ function install_spaceship_theme {
 #========================================================
 #   Custom Installers       
 #========================================================
+function install_poetry {
+    command_exists poetry ||
+    [[ -f ${HOME}/.local/bin/poetry ]] && {
+        display_warning "Skipping: Package exists on PATH:" "poetry"
+        display_bar
+        return 0
+    }
+    display_info "Installing:" "poetry"
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
+    display_bar
+}
 function install_firacode {
     local dotfiles_home=$1
     [[ $OPERATING_SYSTEM == 'Darwin' ]] && {
