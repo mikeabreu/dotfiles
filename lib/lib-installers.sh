@@ -18,7 +18,7 @@ declare _SYSTEM_PACKAGE_MANAGER_UPDATED=false
 #========================================================
 function update_system_package {
     case "$OPERATING_SYSTEM" in
-        Ubuntu | Debian) run_elevated_cmd apt-get update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
+        Ubuntu | Debian | Kali) run_elevated_cmd apt-get update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
         CentOS) run_elevated_cmd yum update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
         Darwin) run_elevated_cmd brew update && _SYSTEM_PACKAGE_MANAGER_UPDATED=true ;;
         *)  display_error "Unknown system package manager. Exiting."; exit 1 ;;
@@ -26,6 +26,7 @@ function update_system_package {
 }
 function dpkg_check {
     [[ $OPERATING_SYSTEM == 'Ubuntu' ]] ||
+    [[ $OPERATING_SYSTEM == 'Kali' ]] ||
     [[ $OPERATING_SYSTEM == 'Debian' ]] && {
         dpkg -l | grep -i " $1" &>/dev/null
     }
@@ -54,7 +55,7 @@ function install_system_package {
     }
     # Determine which system package manager to use by OS
     case "$OPERATING_SYSTEM" in
-        Ubuntu|Debian)  
+        Ubuntu|Debian|Kali)  
             # Use 'apt'
             run_elevated_cmd apt-get install -y $package_name && {
                 display_success "Successfully installed system package" "$package_name"
