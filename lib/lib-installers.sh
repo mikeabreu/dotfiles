@@ -324,6 +324,7 @@ function install_oh_my_zsh_system {
     export RUNZSH=no && \
         /tmp/ohmyzsh/tools/install.sh --unattended --keep-zshrc
     rm -fr /tmp/ohmyzsh
+    rm "${HOME}/.zshrc"
     # Restoring umask
     umask "$last_umask"
     display_bar
