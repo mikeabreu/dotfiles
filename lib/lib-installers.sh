@@ -319,8 +319,6 @@ function install_oh_my_zsh_system {
     local last_umask="$(umask)"
     umask g-w,o-w
     display_info "Installing Oh My Zsh System Wide"
-    export ZSH=/usr/share/oh-my-zsh
-    export RUNZSH=no
     git clone -c core.eol=lf -c core.autocrlf=false \
         -c fsck.zeroPaddedFilemode=ignore \
         -c fetch.fsck.zeroPaddedFilemode=ignore \
@@ -329,7 +327,9 @@ function install_oh_my_zsh_system {
             error "git clone of oh-my-zsh repo failed"
             exit 1
         }
-    /tmp/ohmyzsh/tools/install.sh
+    ZSH=/usr/share/oh-my-zsh && \
+    RUNZSH=no && \
+        /tmp/ohmyzsh/tools/install.sh --unattended --keep-zshrc
     rm -fr /tmp/ohmyzsh
     # Restoring umask
     umask "$last_umask"
