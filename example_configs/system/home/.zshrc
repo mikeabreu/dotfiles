@@ -203,4 +203,4 @@ add_terminal_colors
 # Sourcing
 # -----------------------------------------------
 # GRC Sourcing
-[[ -f "/etc/grc/grc.zsh" ]] && source "/etc/grc/grc.zsh"
+[[ -f "/etc/grc.zsh" ]] && source "/etc/grc.zsh"
