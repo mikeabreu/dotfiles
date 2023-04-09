@@ -2,11 +2,11 @@
     "name": "default",
     "configs_path": "example_configs/system/home",
     "shell": "zsh",
-    "shell_framework": "oh-my-zsh",
-    "shell_theme": "spaceship-prompt",
+    "shell_framework": "oh-my-zsh-system",
+    "shell_theme": "spaceship-prompt-system",
     "shell_plugins": [
-        "zsh-autosuggestions",
-        "zsh-syntax-highlighting"
+        "zsh-autosuggestions-system",
+        "zsh-syntax-highlighting-system"
     ],
     "system_packages": [
         "vim",
@@ -19,7 +19,7 @@
         "wget"
     ],
     "custom_installers": [
-        "vimrc_system",
+        "vimrc-system",
         "firacode"
     ]
 }

@@ -186,6 +186,7 @@ function install_shell_theme {
     case "$shell_theme" in
         # ADD CUSTOM SHELL THEME INSTALLER HERE
         spaceship-prompt) install_spaceship_theme "${dotfiles_home}/.oh-my-zsh" ;;
+        spaceship-prompt-system) install_spaceship_theme "/usr/share/oh-my-zsh" ;;
         # Catch All
         *)  display_error "LIB-INSTALLERS: No installer found for shell theme:" "$shell_theme";;
     esac
@@ -217,6 +218,23 @@ function install_shell_plugins {
                     git clone https://github.com/zsh-users/zsh-autosuggestions.git "${ohmyzsh_plugins_dir}/zsh-autosuggestions"
                 } 
                 display_bar ;;
+            # System Versions
+            zsh-syntax-highlighting-system)
+                [[ -e "/usr/share/oh-my-zsh/plugins/zsh-syntax-highlighting" ]] && {
+                    display_warning "Skipping: Shell Plugin is already installed:" "$plugin"
+                } || {
+                    display_info "Installing shell plugin:" "zsh-syntax-highlighting"
+                    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "/usr/share/oh-my-zsh/plugins/zsh-syntax-highlighting"
+                }
+                display_bar ;;
+            zsh-autosuggestions-system)
+                [[ -e "/usr/share/oh-my-zsh/plugins/zsh-autosuggestions" ]] && {
+                    display_warning "Skipping: Shell Plugin is already installed:" "$plugin"
+                } || {
+                    display_info "Installing shell plugin:" "zsh-autosuggestions"
+                    git clone https://github.com/zsh-users/zsh-autosuggestions.git "/usr/share/oh-my-zsh/plugins/zsh-autosuggestions"
+                } 
+                display_bar ;;
             # Catch All
             *)  display_warning "LIB-INSTALLERS: No installer found for shell plugin:" "$plugin";;
         esac
@@ -234,7 +252,7 @@ function install_custom_installers {
             # ADD CUSTOM INSTALLERS HERE
             iterm2)         install_iterm2 ;;
             amix/vimrc)     install_amix_vimrc "${dotfiles_root_dir}/_home" ;;
-            vimrc_system)   install_amix_vimrc_system ;;
+            vimrc-system)   install_amix_vimrc_system ;;
             firacode)       install_firacode "${dotfiles_root_dir}/_home";;
             poetry)         install_poetry ;;
             # Catch All
