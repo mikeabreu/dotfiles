@@ -304,7 +304,7 @@ function install_oh_my_zsh {
     umask "$last_umask"
     display_bar
 }
-function oh-my-zsh-system {
+function install_oh_my_zsh_system {
     # dotfiles_home="${HOME}/dotfiles/_home"
     [[ -e "/usr/share/oh-my-zsh/oh-my-zsh.sh" ]] && {
         display_warning "Skipping: Shell Framework is already installed:" "oh-my-zsh"
