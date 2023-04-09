@@ -171,6 +171,7 @@ function install_shell_framework {
     case "$shell_framework" in
         # ADD CUSTOM SHELL FRAMEWORK INSTALLER HERE
         oh-my-zsh) install_oh_my_zsh "$dotfiles_home" ;;
+        oh-my-zsh-system) install_oh_my_zsh_system ;;
         # Catch All
         *)  display_error "LIB-INSTALLERS: No installer found for shell framework" "$shell_framework";;
     esac
@@ -233,6 +234,7 @@ function install_custom_installers {
             # ADD CUSTOM INSTALLERS HERE
             iterm2)         install_iterm2 ;;
             amix/vimrc)     install_amix_vimrc "${dotfiles_root_dir}/_home" ;;
+            vimrc_system)   install_amix_vimrc_system ;;
             firacode)       install_firacode "${dotfiles_root_dir}/_home";;
             poetry)         install_poetry ;;
             # Catch All
@@ -280,6 +282,37 @@ function install_oh_my_zsh {
             error "git clone of oh-my-zsh repo failed"
             exit 1
         }
+    # Restoring umask
+    umask "$last_umask"
+    display_bar
+}
+function oh-my-zsh-system {
+    # dotfiles_home="${HOME}/dotfiles/_home"
+    [[ -e "/usr/share/oh-my-zsh/oh-my-zsh.sh" ]] && {
+        display_warning "Skipping: Shell Framework is already installed:" "oh-my-zsh"
+        display_bar
+        return 0
+    }
+    # Prevent the cloned repository from having insecure permissions. Failing to do
+    # so causes compinit() calls to fail with "command not found: compdef" errors
+    # for users with insecure umasks (e.g., "002", allowing group writability). Note
+    # that this will be ignored under Cygwin by default, as Windows ACLs take
+    # precedence over umasks except for filesystems mounted with option "noacl".
+    local last_umask="$(umask)"
+    umask g-w,o-w
+    display_info "Installing Oh My Zsh System Wide"
+    export ZSH=/usr/share/oh-my-zsh
+    export RUNZSH=no
+    git clone -c core.eol=lf -c core.autocrlf=false \
+        -c fsck.zeroPaddedFilemode=ignore \
+        -c fetch.fsck.zeroPaddedFilemode=ignore \
+        -c receive.fsck.zeroPaddedFilemode=ignore \
+        --depth=1 --branch "master" "https://github.com/ohmyzsh/ohmyzsh" "/tmp/ohmyzsh" || {
+            error "git clone of oh-my-zsh repo failed"
+            exit 1
+        }
+    /tmp/ohmyzsh/tools/install.sh
+    rm -fr /tmp/ohmyzsh
     # Restoring umask
     umask "$last_umask"
     display_bar
@@ -337,6 +370,15 @@ function install_amix_vimrc {
     [[ ! -d "${dotfiles_home}/.vim_runtime" ]] && {
         display_info "Installing:" "amix/vimrc"
         git clone --depth=1 https://github.com/amix/vimrc.git "${dotfiles_home}/.vim_runtime"
+    } || {
+        display_warning "Skipping: Custom Installer already installed:" "amix/vimrc"
+    }
+    display_bar
+}
+function install_amix_vimrc_system {
+    [[ ! -d "/usr/share/vim_runtime" ]] && {
+        display_info "Installing:" "amix/vimrc"
+        git clone --depth=1 https://github.com/amix/vimrc.git "/usr/share/vim_runtime"
     } || {
         display_warning "Skipping: Custom Installer already installed:" "amix/vimrc"
     }

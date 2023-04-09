@@ -1,0 +1,25 @@
+{
+    "name": "default",
+    "configs_path": "example_configs/system/home",
+    "shell": "zsh",
+    "shell_framework": "oh-my-zsh",
+    "shell_theme": "spaceship-prompt",
+    "shell_plugins": [
+        "zsh-autosuggestions",
+        "zsh-syntax-highlighting"
+    ],
+    "system_packages": [
+        "vim",
+        "tmux",
+        "grc",
+        "htop",
+        "parallel",
+        "ipcalc",
+        "curl",
+        "wget"
+    ],
+    "custom_installers": [
+        "vimrc_system",
+        "firacode"
+    ]
+}

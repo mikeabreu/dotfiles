@@ -9,12 +9,9 @@ unset SPACESHIP_ROOT
 # Environment Variables
 # -----------------------------------------------
 export OLD_PATH="${PATH}"
-export GOPATH="${HOME}/gocode"
-export GOBIN="${GOPATH}/bin"
-export PATH="${HOME}/.local/bin:${PATH}:${HOME}/bin:${GOBIN}:"
-export ZSH="${HOME}/.oh-my-zsh"
+export PATH="${HOME}/.local/bin:${PATH}:${HOME}/bin:"
+export ZSH="/usr/share/oh-my-zsh"
 export TERM="xterm-256color"
-export EXE4J_JAVA_HOME="/usr/local/opt/openjdk/bin/"
 export GRC_DEBUG=false
 export CLICOLOR_FORCE=1
 # -----------------------------------------------
@@ -206,4 +203,4 @@ add_terminal_colors
 # Sourcing
 # -----------------------------------------------
 # GRC Sourcing
-[[ -f "${HOME}/.grc/grc.zsh" ]] && source "${HOME}/.grc/grc.zsh"
+[[ -f "/etc/grc/grc.zsh" ]] && source "/etc/grc/grc.zsh"
